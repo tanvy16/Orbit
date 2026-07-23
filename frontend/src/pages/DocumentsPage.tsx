@@ -10,7 +10,9 @@ import { Input } from '@/components/ui/Input'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Select } from '@/components/ui/Select'
-import { Spinner } from '@/components/ui/Spinner'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { MetricCard } from '@/components/ui/MetricCard'
+import { TableRowsSkeleton } from '@/components/ui/Skeleton'
 import {
   fetchDocumentStats,
   fetchDocuments,
@@ -68,7 +70,7 @@ export function DocumentsPage() {
     <>
       <PageHeader
         title="Documents"
-        description="Local document index — metadata and hashes prepared for semantic search in Phase 3."
+        description="Browse and filter your local document index — metadata synced for semantic search."
         actions={
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => void pickAndRegisterFolders().catch(console.error)}>
@@ -95,22 +97,28 @@ export function DocumentsPage() {
       ) : null}
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <p className="text-xs text-orbit-foreground-muted">Indexed</p>
-          <p className="mt-1 text-2xl font-semibold">{statsQuery.data?.totalIndexed ?? '—'}</p>
-        </Card>
-        <Card>
-          <p className="text-xs text-orbit-foreground-muted">Pending</p>
-          <p className="mt-1 text-2xl font-semibold">{statsQuery.data?.totalPending ?? '—'}</p>
-        </Card>
-        <Card>
-          <p className="text-xs text-orbit-foreground-muted">Duplicates</p>
-          <p className="mt-1 text-2xl font-semibold">{statsQuery.data?.totalDuplicates ?? '—'}</p>
-        </Card>
-        <Card>
-          <p className="text-xs text-orbit-foreground-muted">Watched folders</p>
-          <p className="mt-1 text-2xl font-semibold">{statsQuery.data?.watchedFolders ?? '—'}</p>
-        </Card>
+        <MetricCard
+          label="Indexed"
+          icon={FileText}
+          loading={statsQuery.isLoading && !statsQuery.data}
+          value={statsQuery.data?.totalIndexed ?? '—'}
+        />
+        <MetricCard
+          label="Pending"
+          loading={statsQuery.isLoading && !statsQuery.data}
+          value={statsQuery.data?.totalPending ?? '—'}
+        />
+        <MetricCard
+          label="Duplicates"
+          loading={statsQuery.isLoading && !statsQuery.data}
+          value={statsQuery.data?.totalDuplicates ?? '—'}
+        />
+        <MetricCard
+          label="Watched folders"
+          icon={FolderOpen}
+          loading={statsQuery.isLoading && !statsQuery.data}
+          value={statsQuery.data?.watchedFolders ?? '—'}
+        />
       </div>
 
       <Card padding="none" className="overflow-hidden">
@@ -172,11 +180,7 @@ export function DocumentsPage() {
           </Select>
         </div>
 
-        {documentsQuery.isLoading ? (
-          <div className="p-12">
-            <Spinner label="Loading documents…" />
-          </div>
-        ) : null}
+        {documentsQuery.isLoading ? <TableRowsSkeleton rows={8} /> : null}
 
         {documentsQuery.isError ? (
           <div className="p-6">
@@ -192,12 +196,22 @@ export function DocumentsPage() {
         ) : null}
 
         {documentsQuery.data && documentsQuery.data.items.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 p-16 text-center">
-            <FileText className="h-10 w-10 text-orbit-foreground-muted" />
-            <p className="text-sm font-medium">No indexed documents yet</p>
-            <p className="max-w-md text-sm text-orbit-foreground-muted">
-              Add folders from Settings or use &quot;Add folders&quot; to start indexing.
-            </p>
+          <div className="p-6">
+            <EmptyState
+              icon={FileText}
+              showLogo
+              title="No indexed documents yet"
+              description='Add folders from Settings or use "Add folders" to start indexing your files.'
+              action={
+                <Button
+                  variant="secondary"
+                  onClick={() => void pickAndRegisterFolders().catch(console.error)}
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  Add folders
+                </Button>
+              }
+            />
           </div>
         ) : null}
 

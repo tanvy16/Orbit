@@ -4,7 +4,6 @@ import { FolderPlus, RefreshCw, Trash2 } from 'lucide-react'
 
 import { DEFAULT_SUPPORTED_EXTENSIONS } from '@shared/types'
 
-import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -21,7 +20,7 @@ import {
   runMaintenance,
   updateSettings,
 } from '@/services/documents-api'
-import { Spinner } from '@/components/ui/Spinner'
+import { SettingsFormSkeleton } from '@/components/ui/Skeleton'
 
 export function SettingsPage() {
   const queryClient = useQueryClient()
@@ -51,7 +50,15 @@ export function SettingsPage() {
   const settings = settingsQuery.data
 
   if (settingsQuery.isLoading) {
-    return <Spinner className="py-24" label="Loading settings…" />
+    return (
+      <>
+        <PageHeader
+          title="Settings"
+          description="Indexing folders, supported formats, notifications, and database maintenance."
+        />
+        <SettingsFormSkeleton />
+      </>
+    )
   }
 
   if (settingsQuery.isError || !settings) {
@@ -75,7 +82,6 @@ export function SettingsPage() {
       <PageHeader
         title="Settings"
         description="Indexing folders, supported formats, notifications, and database maintenance."
-        actions={<Badge variant="accent">Phase 2</Badge>}
       />
 
       <div className="grid gap-4 lg:grid-cols-2">

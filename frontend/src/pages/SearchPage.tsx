@@ -10,7 +10,7 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { Input } from '@/components/ui/Input'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Select } from '@/components/ui/Select'
-import { Spinner } from '@/components/ui/Spinner'
+import { SearchResultsSkeleton } from '@/components/ui/Skeleton'
 import { fetchDocumentStats, fetchFolders } from '@/services/documents-api'
 import { openDocumentPath, semanticSearch } from '@/services/search-api'
 
@@ -77,7 +77,6 @@ export function SearchPage() {
       <PageHeader
         title="Semantic Search"
         description="Search by meaning across indexed documents — powered by local embeddings and ChromaDB."
-        actions={<Badge variant="accent">Phase 3</Badge>}
       />
 
       <Card className="mb-6">
@@ -125,7 +124,7 @@ export function SearchPage() {
       </Card>
 
       {showSearchSpinner ? (
-        <Spinner className="py-16" label="Searching knowledge index…" />
+        <SearchResultsSkeleton />
       ) : null}
 
       {searchQuery.isError && submittedQuery ? (
@@ -141,6 +140,7 @@ export function SearchPage() {
       !showSearchSpinner ? (
         <EmptyState
           icon={Search}
+          showLogo
           title="No semantic matches"
           description="Try different wording, remove filters, or wait for embeddings to finish generating."
         />
@@ -159,7 +159,7 @@ export function SearchPage() {
                 }}
                 onClick={() => setSelectedPath(item.path)}
               >
-                <Card className="transition-colors hover:border-orbit-accent/40">
+                <Card className="transition-all duration-200 hover:border-orbit-accent/30 hover:shadow-md">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-medium">{item.fileName}</p>

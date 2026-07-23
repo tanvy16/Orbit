@@ -1,6 +1,8 @@
 export const appConfig = {
   name: 'Orbit',
-  tagline: 'AI-Powered Desktop Operating Intelligence',
+  tagline: 'Your desktop. Your intelligence.',
+  version: '0.3.0',
+  license: 'MIT',
   apiBaseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:18765',
   storageKeys: {
     theme: 'orbit-theme',

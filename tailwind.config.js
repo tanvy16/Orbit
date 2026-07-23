@@ -26,12 +26,17 @@ export default {
         panel: '0 1px 2px hsl(0 0% 0% / 0.24), 0 8px 24px hsl(0 0% 0% / 0.12)',
       },
       animation: {
-        'fade-in': 'fadeIn 0.2s ease-out',
+        'fade-in': 'fadeIn 0.25s ease-out',
+        shimmer: 'shimmer 1.5s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
           from: { opacity: '0', transform: 'translateY(4px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        shimmer: {
+          '0%, 100%': { opacity: '0.45' },
+          '50%': { opacity: '0.85' },
         },
       },
     },

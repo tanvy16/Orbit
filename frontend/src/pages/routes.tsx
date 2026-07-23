@@ -1,12 +1,12 @@
-import { Bot, Workflow, BarChart3, History, Info } from 'lucide-react'
+import { Bot, Workflow, BarChart3, History } from 'lucide-react'
 
-import { appConfig } from '@/config/app'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 
 export { DashboardPage } from '@/pages/DashboardPage'
 export { DocumentsPage } from '@/pages/DocumentsPage'
 export { NotificationsPage } from '@/pages/NotificationsPage'
 export { SettingsPage } from '@/pages/SettingsPage'
+export { AboutPage } from '@/pages/AboutPage'
 
 export function CopilotPage() {
   return (
@@ -14,7 +14,6 @@ export function CopilotPage() {
       title="AI Copilot"
       description="Natural language control of your desktop and workflows."
       icon={Bot}
-      phase={4}
     />
   )
 }
@@ -25,7 +24,6 @@ export function AutomationPage() {
       title="Automation"
       description="Workflow automation with auditable execution history."
       icon={Workflow}
-      phase={4}
     />
   )
 }
@@ -36,7 +34,6 @@ export function AnalyticsPage() {
       title="Analytics"
       description="Historical metrics and system intelligence reports."
       icon={BarChart3}
-      phase={4}
     />
   )
 }
@@ -47,16 +44,6 @@ export function HistoryPage() {
       title="History"
       description="Timeline of actions, queries, and automation runs."
       icon={History}
-    />
-  )
-}
-
-export function AboutPage() {
-  return (
-    <PlaceholderPage
-      title="About Orbit"
-      description={`${appConfig.tagline} — Phase 2 desktop integration.`}
-      icon={Info}
     />
   )
 }

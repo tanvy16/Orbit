@@ -13,9 +13,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'bg-orbit-accent text-orbit-accent-foreground hover:opacity-90 shadow-sm disabled:opacity-50',
-  secondary: 'bg-orbit-muted text-orbit-foreground hover:bg-orbit-border/60',
-  ghost: 'hover:bg-orbit-muted text-orbit-foreground-muted hover:text-orbit-foreground',
+    'bg-orbit-accent text-orbit-accent-foreground hover:brightness-110 shadow-sm disabled:opacity-50 transition-all duration-150',
+  secondary:
+    'bg-orbit-muted text-orbit-foreground hover:bg-orbit-border/50 transition-all duration-150',
+  ghost:
+    'hover:bg-orbit-muted text-orbit-foreground-muted hover:text-orbit-foreground transition-all duration-150',
   danger: 'bg-orbit-danger/10 text-orbit-danger hover:bg-orbit-danger/20',
 }
 

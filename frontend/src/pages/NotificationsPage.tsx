@@ -4,9 +4,10 @@ import { Bell } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { Spinner } from '@/components/ui/Spinner'
+import { Skeleton } from '@/components/ui/Skeleton'
 import {
   fetchNotifications,
   markAllNotificationsRead,
@@ -21,6 +22,22 @@ const levelStyles: Record<string, string> = {
   error: 'border-orbit-danger/30 bg-orbit-danger/5',
 }
 
+function NotificationsSkeleton() {
+  return (
+    <ul className="space-y-3">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <li key={i}>
+          <Card>
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="mt-3 h-3 w-full" />
+            <Skeleton className="mt-2 h-3 w-24" />
+          </Card>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function NotificationsPage() {
   const queryClient = useQueryClient()
   const notificationsQuery = useQuery({
@@ -30,19 +47,30 @@ export function NotificationsPage() {
   })
 
   if (notificationsQuery.isLoading) {
-    return <Spinner className="py-24" label="Loading notifications…" />
+    return (
+      <>
+        <PageHeader
+          title="Notifications"
+          description="Indexing progress, scan results, and background task alerts."
+        />
+        <NotificationsSkeleton />
+      </>
+    )
   }
 
   if (notificationsQuery.isError) {
     return (
-      <ErrorState
-        message={
-          notificationsQuery.error instanceof Error
-            ? notificationsQuery.error.message
-            : 'Failed to load notifications'
-        }
-        onRetry={() => void notificationsQuery.refetch()}
-      />
+      <>
+        <PageHeader title="Notifications" description="Indexing progress and system alerts." />
+        <ErrorState
+          message={
+            notificationsQuery.error instanceof Error
+              ? notificationsQuery.error.message
+              : 'Failed to load notifications'
+          }
+          onRetry={() => void notificationsQuery.refetch()}
+        />
+      </>
     )
   }
 
@@ -54,47 +82,50 @@ export function NotificationsPage() {
         title="Notifications"
         description="Indexing progress, scan results, and background task alerts."
         actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() =>
-              void markAllNotificationsRead().then(() =>
-                queryClient.invalidateQueries({ queryKey: ['notifications'] }),
-              )
-            }
-          >
-            Mark all read
-          </Button>
+          items.length > 0 ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                void markAllNotificationsRead().then(() =>
+                  queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+                )
+              }
+            >
+              Mark all read
+            </Button>
+          ) : undefined
         }
       />
 
       {items.length === 0 ? (
-        <Card className="flex flex-col items-center py-16 text-center">
-          <Bell className="mb-3 h-8 w-8 text-orbit-foreground-muted" />
-          <p className="text-sm font-medium">No notifications yet</p>
-          <p className="mt-1 text-sm text-orbit-foreground-muted">
-            Indexing and watcher events will appear here.
-          </p>
-        </Card>
+        <EmptyState
+          icon={Bell}
+          showLogo
+          title="No notifications yet"
+          description="Indexing and watcher events will appear here as your workspace stays in sync."
+        />
       ) : (
         <ul className="space-y-3">
           {items.map((item) => (
             <li key={item.id}>
               <Card
                 className={cn(
-                  'border',
+                  'border transition-shadow duration-200 hover:shadow-md',
                   levelStyles[item.level] ?? levelStyles.info,
-                  !item.read && 'ring-1 ring-orbit-accent/30',
+                  !item.read && 'ring-1 ring-orbit-accent/25',
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm font-semibold">{item.title}</p>
                       <Badge variant="muted">{item.category}</Badge>
                       {!item.read ? <Badge variant="accent">New</Badge> : null}
                     </div>
-                    <p className="mt-1 text-sm text-orbit-foreground-muted">{item.body}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-orbit-foreground-muted">
+                      {item.body}
+                    </p>
                     <p className="mt-2 text-xs text-orbit-foreground-muted">{item.createdAt}</p>
                   </div>
                   {!item.read ? (
