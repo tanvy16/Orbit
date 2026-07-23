@@ -19,10 +19,13 @@ engine = create_engine(_db_url, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
+from backend.app.database.migrate import run_migrations
+
+
 def init_db() -> None:
     import backend.app.models  # noqa: F401 — register metadata
 
-    Base.metadata.create_all(bind=engine)
+    run_migrations()
     with engine.connect() as conn:
         conn.execute(text("SELECT 1"))
     logger.info("Database initialized at %s", _db_url)

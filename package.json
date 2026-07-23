@@ -1,6 +1,6 @@
 {
   "name": "orbit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Orbit – AI-Powered Desktop Operating Intelligence Platform",
   "private": true,
   "type": "module",
@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.66.9",
+    "chokidar": "^4.0.3",
     "clsx": "^2.1.1",
     "framer-motion": "^12.4.7",
     "lucide-react": "^0.475.0",

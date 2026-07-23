@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router-dom'
 
+import { useDesktopIndexEvents } from '@/hooks/use-desktop-index-events'
 import { useThemeSync } from '@/hooks/use-theme-sync'
 import { appRouter } from '@/router'
 
@@ -15,6 +16,7 @@ const queryClient = new QueryClient({
 
 function AppProviders() {
   useThemeSync()
+  useDesktopIndexEvents()
   return <RouterProvider router={appRouter} />
 }
 

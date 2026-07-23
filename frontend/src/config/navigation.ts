@@ -25,8 +25,8 @@ export interface NavigationItem {
 
 export const primaryNavigation: NavigationItem[] = [
   { id: 'dashboard', label: 'Dashboard', path: routes.dashboard, icon: LayoutDashboard },
-  { id: 'copilot', label: 'AI Copilot', path: routes.copilot, icon: Bot, badge: 'Phase 2', phase: 2 },
-  { id: 'search', label: 'Semantic Search', path: routes.search, icon: Search, badge: 'Phase 2', phase: 2 },
+  { id: 'copilot', label: 'AI Copilot', path: routes.copilot, icon: Bot, badge: 'Phase 3', phase: 3 },
+  { id: 'search', label: 'Semantic Search', path: routes.search, icon: Search, badge: 'Phase 3', phase: 3 },
   { id: 'documents', label: 'Documents', path: routes.documents, icon: FileText, badge: 'Phase 2', phase: 2 },
   { id: 'automation', label: 'Automation', path: routes.automation, icon: Workflow, badge: 'Phase 2', phase: 2 },
   { id: 'analytics', label: 'Analytics', path: routes.analytics, icon: BarChart3, badge: 'Phase 2', phase: 2 },

@@ -72,7 +72,9 @@ Placeholder entities (created on startup):
 |---------|-------|---------|
 | `orbit:ping` | 1 | Connectivity check |
 | `orbit:get-app-info` | 1 | Diagnostics |
-| `orbit:fs:*` | 2+ | Sandboxed filesystem access |
+| `orbit:fs:*` | 2 | Sandboxed filesystem access |
+| `orbit:index:*` | 2 | Folder scans & task control |
+| `orbit:watcher:resync` | 2 | Reload OS file watchers |
 | `orbit:ai:invoke` | 2+ | Local/cloud model routing |
 | `orbit:monitor:*` | 2+ | System metrics stream |
 | `orbit:automation:run` | 2+ | Workflow execution |

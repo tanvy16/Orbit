@@ -2,39 +2,32 @@
 
 ## Phase 1 — Foundation & Architecture
 
-**Status:** Complete (foundation verified via build, lint, typecheck, API health, Electron launch)
+**Status:** Complete
 
-### Completed
+## Phase 2 — Desktop Integration & Core Services
 
-- [x] Monorepo-style layout: `electron/`, `frontend/`, `backend/`, `shared/`
-- [x] Electron main + preload with context isolation and IPC handlers
-- [x] React + TypeScript + Tailwind premium shell (sidebar, top nav, animations)
-- [x] Dark / light / system theme with persistence
-- [x] React Router (hash) with all navigation targets
-- [x] Placeholder pages for future modules
-- [x] Zustand stores (theme, sidebar)
-- [x] TanStack Query health + IPC status on Dashboard
-- [x] FastAPI app structure (routes, middleware, logging, config)
-- [x] SQLite initialization + placeholder SQLAlchemy models
-- [x] ESLint, Prettier, Husky pre-commit
-- [x] Documentation: README, ARCHITECTURE, CHANGELOG, `.env.example`, `documentation/`
+**Status:** Complete (build, lint, and typecheck verified)
 
-### Verification checklist
+### Delivered
 
-- [x] Electron launches successfully (`npx electron .` after `npm run build`)
-- [x] React renderer builds and loads (`out/renderer/`)
-- [x] FastAPI `/api/v1/health` returns `database: ok`
-- [x] IPC channels wired (`orbit:ping`, app info, platform)
-- [x] Navigation + theme persistence implemented
-- [x] All placeholder routes registered
-- [x] `npm run lint` passes
-- [x] `npm run typecheck` passes
-- [x] `npm run build` succeeds
+- [x] Secure filesystem IPC (folder picker, directory listing, metadata, text preview, path guard)
+- [x] Background indexing engine (recursive scan, SHA-256 hashing, incremental skip via fingerprints, batch SQLite upsert)
+- [x] File watcher (chokidar, debounced re-index, delete propagation)
+- [x] Background task manager (per-folder dedupe, cancel, progress persisted via API)
+- [x] Document management API (list, filter, sort, paginate, stats, batch upsert)
+- [x] Notification service (SQLite + UI inbox + top-nav unread badge)
+- [x] Settings panel (folders, extensions, ignore lists, auto-index, notifications, maintenance)
+- [x] Functional Documents page with stats, filters, progress, and folder actions
+- [x] Extension point routes under `/api/v1/extensions/*` for Phase 3+ modules
 
-## Phase 2 — Planned (not started)
+### Verification
 
-- AI Copilot conversation UI + service layer
-- Semantic search indexing pipeline
-- Document intelligence
-- System monitoring stream
-- Workflow automation engine
+- [x] `npm run lint`
+- [x] `npm run typecheck`
+- [x] `npm run build`
+
+## Phase 3 — Planned
+
+- Semantic search & vector database (ChromaDB)
+- Embeddings pipeline & RAG
+- AI Copilot orchestration
