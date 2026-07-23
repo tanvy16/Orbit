@@ -19,6 +19,7 @@ export function useDesktopIndexEvents(): void {
       void queryClient.invalidateQueries({ queryKey: ['folders'] })
       void queryClient.invalidateQueries({ queryKey: ['notifications'] })
       void queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      void queryClient.invalidateQueries({ queryKey: ['embedding-status'] })
     })
 
     const unsubWatcher = window.orbit.onWatcherChange(() => {

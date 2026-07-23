@@ -10,7 +10,8 @@ import { Card } from '@/components/ui/Card'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Input } from '@/components/ui/Input'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { Spinner } from '@/components/ui/Spinner'
+import { Select } from '@/components/ui/Select'
+import { rebuildEmbeddings, syncEmbeddings } from '@/services/search-api'
 import {
   deleteFolder,
   fetchFolders,
@@ -20,6 +21,7 @@ import {
   runMaintenance,
   updateSettings,
 } from '@/services/documents-api'
+import { Spinner } from '@/components/ui/Spinner'
 
 export function SettingsPage() {
   const queryClient = useQueryClient()
@@ -37,6 +39,7 @@ export function SettingsPage() {
     mutationFn: updateSettings,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings'] })
+      void queryClient.invalidateQueries({ queryKey: ['embedding-status'] })
       void window.orbit?.resyncWatcher()
     },
   })
@@ -202,6 +205,69 @@ export function SettingsPage() {
               />
             </label>
           ))}
+        </Card>
+
+        <Card className="space-y-3">
+          <h2 className="text-sm font-semibold">Embeddings & vectors</h2>
+          <label className="block text-sm">
+            <span className="text-orbit-foreground-muted">Provider</span>
+            <Select
+              className="mt-1 w-full"
+              value={settings.embeddingProvider}
+              onChange={(e) =>
+                saveMutation.mutate({
+                  embeddingProvider: e.target.value as 'sentence-transformers' | 'ollama',
+                })
+              }
+            >
+              <option value="sentence-transformers">Sentence Transformers (local)</option>
+              <option value="ollama">Ollama</option>
+            </Select>
+          </label>
+          <label className="block text-sm">
+            <span className="text-orbit-foreground-muted">Model</span>
+            <Input
+              className="mt-1"
+              defaultValue={settings.embeddingModel}
+              onBlur={(e) => saveMutation.mutate({ embeddingModel: e.target.value })}
+            />
+          </label>
+          <label className="flex items-center justify-between gap-4 text-sm">
+            <span>Auto-generate embeddings on index</span>
+            <input
+              type="checkbox"
+              checked={settings.autoEmbedOnIndex}
+              onChange={(e) => saveMutation.mutate({ autoEmbedOnIndex: e.target.checked })}
+            />
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm">
+              <span className="text-orbit-foreground-muted">Chunk size</span>
+              <Input
+                type="number"
+                className="mt-1"
+                defaultValue={settings.chunkSize}
+                onBlur={(e) => saveMutation.mutate({ chunkSize: Number(e.target.value) })}
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="text-orbit-foreground-muted">Overlap</span>
+              <Input
+                type="number"
+                className="mt-1"
+                defaultValue={settings.chunkOverlap}
+                onBlur={(e) => saveMutation.mutate({ chunkOverlap: Number(e.target.value) })}
+              />
+            </label>
+          </div>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button variant="secondary" size="sm" onClick={() => void syncEmbeddings().catch(console.error)}>
+              Sync embeddings
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => void rebuildEmbeddings().catch(console.error)}>
+              Rebuild vector index
+            </Button>
+          </div>
         </Card>
 
         <Card className="space-y-3">

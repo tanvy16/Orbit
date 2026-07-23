@@ -39,6 +39,11 @@ class SettingsService:
         else:
             row.value = json.dumps(current)
         self.db.commit()
+        embedding_keys = {"embeddingProvider", "embeddingModel", "chunkSize", "chunkOverlap", "ollamaBaseUrl"}
+        if embedding_keys.intersection(data.keys()):
+            from backend.app.services.embedding_worker import embedding_worker
+
+            embedding_worker.request_rebuild()
         return current
 
     def maintenance(self, prune_removed: bool, recompute_duplicates: bool) -> dict:

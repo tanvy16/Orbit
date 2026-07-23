@@ -1,4 +1,4 @@
-import { dialog, ipcMain } from 'electron'
+import { dialog, ipcMain, shell } from 'electron'
 
 import { IPC_CHANNELS, type AppInfo, type PingResponse } from '@shared/types'
 
@@ -16,7 +16,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.GET_APP_INFO, (): AppInfo => {
     return {
       name: 'Orbit',
-      version: process.env['npm_package_version'] ?? '0.2.0',
+      version: process.env['npm_package_version'] ?? '0.3.0',
       electron: process.versions.electron,
       node: process.versions.node,
       platform: process.platform,
@@ -45,6 +45,12 @@ export function registerIpcHandlers(): void {
     return readTextPreview(targetPath)
   })
 
+  ipcMain.handle(IPC_CHANNELS.FS_OPEN_PATH, async (_event, targetPath: string) => {
+    const allowed = pathGuard.assertAllowed(targetPath)
+    const result = await shell.openPath(allowed)
+    return { ok: result === '', error: result || undefined }
+  })
+
   ipcMain.handle(
     IPC_CHANNELS.INDEX_START_SCAN,
     async (_event, payload: { folderId: number; folderPath: string }) => {
@@ -68,7 +74,7 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle(IPC_CHANNELS.AI_INVOKE, async () => {
-    throw new Error('AI Copilot is reserved for Phase 3')
+    throw new Error('AI Copilot is reserved for Phase 4')
   })
 }
 

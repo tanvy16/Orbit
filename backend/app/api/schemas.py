@@ -13,6 +13,12 @@ class SettingsUpdate(BaseModel):
     autoIndexOnStartup: bool | None = None
     maxFileSizeMb: int | None = Field(default=None, ge=1, le=500)
     notifications: dict[str, bool] | None = None
+    embeddingProvider: str | None = None
+    embeddingModel: str | None = None
+    ollamaBaseUrl: str | None = None
+    chunkSize: int | None = Field(default=None, ge=200, le=4000)
+    chunkOverlap: int | None = Field(default=None, ge=0, le=1000)
+    autoEmbedOnIndex: bool | None = None
 
 
 class WatchedFolderCreate(BaseModel):
@@ -71,3 +77,11 @@ class NotificationCreate(BaseModel):
 class MaintenanceRequest(BaseModel):
     pruneRemoved: bool = True
     recomputeDuplicateFlags: bool = True
+
+
+class SemanticSearchRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=2000)
+    page: int = Field(default=1, ge=1)
+    pageSize: int = Field(default=10, ge=1, le=50)
+    folderId: int | None = None
+    extension: str | None = None

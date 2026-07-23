@@ -43,6 +43,10 @@ def run_migrations() -> None:
             ("error_message", "error_message TEXT"),
             ("duplicate_of_id", "duplicate_of_id INTEGER"),
             ("content_preview", "content_preview TEXT"),
+            ("embedding_status", "embedding_status VARCHAR(32) DEFAULT 'pending'"),
+            ("embedding_content_hash", "embedding_content_hash VARCHAR(128)"),
+            ("chunk_count", "chunk_count INTEGER DEFAULT 0"),
+            ("embedded_at", "embedded_at DATETIME"),
         ]
         for col, ddl in migrations:
             _add_column_if_missing("indexed_files", col, ddl)

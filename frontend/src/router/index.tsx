@@ -11,9 +11,9 @@ import {
   DocumentsPage,
   HistoryPage,
   NotificationsPage,
-  SearchPage,
   SettingsPage,
 } from '@/pages/routes'
+import { SearchPage } from '@/pages/SearchPage'
 
 export const appRouter = createHashRouter([
   {

@@ -6,9 +6,9 @@ router = APIRouter(prefix="/extensions", tags=["extensions"])
 @router.get("/semantic-search")
 def semantic_search_stub() -> dict:
     return {
-        "implemented": False,
+        "implemented": True,
         "phase": 3,
-        "message": "Semantic search will use vector embeddings and ChromaDB integration.",
+        "endpoint": "/api/v1/search/semantic",
     }
 
 

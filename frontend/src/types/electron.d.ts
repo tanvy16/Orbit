@@ -21,6 +21,7 @@ export interface OrbitElectronAPI {
   listDirectory: (path: string) => Promise<FsDirectoryEntry[]>
   getEntryMetadata: (path: string) => Promise<FsEntryMetadata>
   readTextPreview: (path: string) => Promise<string>
+  openPath: (path: string) => Promise<{ ok: boolean; error?: string }>
   startFolderScan: (payload: { folderId: number; folderPath: string }) => Promise<{ taskId: string }>
   cancelIndexTask: (taskId: string) => Promise<{ cancelled: boolean }>
   getActiveIndexTasks: () => Promise<IndexTaskSummary[]>

@@ -33,6 +33,7 @@ DEFAULT_SUPPORTED_EXTENSIONS: frozenset[str] = frozenset(
         ".yaml",
         ".yml",
         ".xml",
+        ".log",
     }
 )
 

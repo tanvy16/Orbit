@@ -1,4 +1,4 @@
-import { Bot, Search, Workflow, BarChart3, History, Info } from 'lucide-react'
+import { Bot, Workflow, BarChart3, History, Info } from 'lucide-react'
 
 import { appConfig } from '@/config/app'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
@@ -14,18 +14,7 @@ export function CopilotPage() {
       title="AI Copilot"
       description="Natural language control of your desktop and workflows."
       icon={Bot}
-      phase={3}
-    />
-  )
-}
-
-export function SearchPage() {
-  return (
-    <PlaceholderPage
-      title="Semantic Search"
-      description="Vector search across indexed documents."
-      icon={Search}
-      phase={3}
+      phase={4}
     />
   )
 }

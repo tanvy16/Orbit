@@ -2,6 +2,17 @@
 
 All notable changes to Orbit are documented in this file.
 
+## [0.3.0] — 2026-07-23
+
+### Added
+
+- ChromaDB vector store linked to SQLite document metadata
+- Automatic embedding pipeline (extract → chunk → embed → sync)
+- Background embedding worker with backfill for existing indexed files
+- Semantic search API and full Search UI
+- Dashboard vector/embedding status; Settings for models and rebuild
+- Secure `orbit:fs:open-path` IPC for opening documents from search
+
 ## [0.2.0] — 2026-07-23
 
 ### Added

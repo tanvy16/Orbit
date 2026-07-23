@@ -35,10 +35,24 @@ class DocumentService:
         for path in payload.removeMissingPaths:
             row = self.db.scalar(select(IndexedFile).where(IndexedFile.path == path))
             if row:
+                from backend.app.services.embedding_service import EmbeddingService
+
+                EmbeddingService(self.db).delete_for_document(row.id)
                 row.index_status = "removed"
 
         self._recompute_duplicates()
         self.db.commit()
+
+        from backend.app.services.embedding_worker import embedding_worker
+
+        pending_ids: list[int] = []
+        for item in payload.files:
+            row = self.db.scalar(select(IndexedFile).where(IndexedFile.path == item.path))
+            if row and row.embedding_status == "pending" and row.id:
+                pending_ids.append(row.id)
+        for doc_id in pending_ids:
+            embedding_worker.enqueue(doc_id)
+
         return {"upserted": upserted, "skipped": skipped, "removed": len(payload.removeMissingPaths)}
 
     def _upsert_one(
@@ -52,6 +66,8 @@ class DocumentService:
         if not row:
             row = IndexedFile(path=item.path)
             self.db.add(row)
+
+        prior_embed_hash = row.embedding_content_hash
 
         row.file_name = item.fileName
         row.extension = item.extension
@@ -71,6 +87,19 @@ class DocumentService:
             else:
                 self.db.flush()
                 hash_to_first_id[item.contentHash] = row.id
+
+        if (
+            row.index_status == "indexed"
+            and row.duplicate_of_id is None
+            and row.content_hash
+        ):
+            if row.embedding_content_hash != row.content_hash or row.embedding_status in (
+                None,
+                "pending",
+                "failed",
+            ):
+                if row.embedding_status != "embedded" or row.embedding_content_hash != row.content_hash:
+                    row.embedding_status = "pending"
 
         return row
 

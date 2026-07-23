@@ -8,12 +8,14 @@ from backend.app.core.config import settings
 from backend.app.core.logging import logger, setup_logging
 from backend.app.database.session import init_db
 from backend.app.middleware.request_context import RequestContextMiddleware
+from backend.app.services.embedding_worker import embedding_worker
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging()
     init_db()
+    embedding_worker.start()
     logger.info("%s v%s ready", settings.app_name, settings.app_version)
     yield
     logger.info("Shutting down %s", settings.app_name)

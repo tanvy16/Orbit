@@ -7,6 +7,7 @@ export const IPC_CHANNELS = {
   FS_LIST_DIRECTORY: 'orbit:fs:list-directory',
   FS_GET_ENTRY_METADATA: 'orbit:fs:get-entry-metadata',
   FS_READ_TEXT_PREVIEW: 'orbit:fs:read-text-preview',
+  FS_OPEN_PATH: 'orbit:fs:open-path',
   INDEX_START_SCAN: 'orbit:index:start-scan',
   INDEX_CANCEL_TASK: 'orbit:index:cancel-task',
   INDEX_GET_ACTIVE_TASKS: 'orbit:index:get-active-tasks',
@@ -49,6 +50,41 @@ export interface ApiHealthResponse {
   service: string
   version: string
   database: string
+  chroma?: string
+}
+
+export interface EmbeddingStatusDto {
+  totalEmbeddings: number
+  documentsEmbedded: number
+  documentsPending: number
+  documentsProcessing: number
+  documentsFailed: number
+  chromaOk: boolean
+  chromaPath: string
+  chromaVectors: number
+  searchQueries: number
+}
+
+export interface SemanticSearchResultItem {
+  documentId: number
+  similarity: number
+  snippet: string
+  chunkId: string
+  path: string
+  fileName: string
+  extension: string
+  sizeBytes: number
+  watchedFolderId: number | null
+  embeddingStatus: string
+}
+
+export interface SemanticSearchResponse {
+  items: SemanticSearchResultItem[]
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+  query: string
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system'
@@ -113,6 +149,12 @@ export interface OrbitAppSettings {
     indexingErrors: boolean
     watcherEvents: boolean
   }
+  embeddingProvider: 'sentence-transformers' | 'ollama'
+  embeddingModel: string
+  ollamaBaseUrl: string
+  chunkSize: number
+  chunkOverlap: number
+  autoEmbedOnIndex: boolean
 }
 
 export const DEFAULT_SUPPORTED_EXTENSIONS = [
@@ -146,6 +188,7 @@ export const DEFAULT_SUPPORTED_EXTENSIONS = [
   '.yaml',
   '.yml',
   '.xml',
+  '.log',
 ] as const
 
 export const DEFAULT_IGNORED_DIRECTORY_NAMES = [
@@ -174,6 +217,12 @@ export const DEFAULT_APP_SETTINGS: OrbitAppSettings = {
     indexingErrors: true,
     watcherEvents: false,
   },
+  embeddingProvider: 'sentence-transformers',
+  embeddingModel: 'all-MiniLM-L6-v2',
+  ollamaBaseUrl: 'http://127.0.0.1:11434',
+  chunkSize: 800,
+  chunkOverlap: 120,
+  autoEmbedOnIndex: true,
 }
 
 export interface WatchedFolderDto {

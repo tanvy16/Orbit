@@ -43,6 +43,10 @@ class IndexedFile(Base, TimestampMixin):
     duplicate_of_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     content_preview: Mapped[str | None] = mapped_column(Text, nullable=True)
     metadata_json: Mapped[str] = mapped_column(Text, default="{}")
+    embedding_status: Mapped[str] = mapped_column(String(32), default="pending", index=True)
+    embedding_content_hash: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    chunk_count: Mapped[int] = mapped_column(Integer, default=0)
+    embedded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     watched_folder: Mapped["WatchedFolder | None"] = relationship("WatchedFolder")
 

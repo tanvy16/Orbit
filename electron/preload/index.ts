@@ -10,6 +10,7 @@ export interface OrbitElectronAPI {
   listDirectory: (path: string) => Promise<import('@shared/types').FsDirectoryEntry[]>
   getEntryMetadata: (path: string) => Promise<import('@shared/types').FsEntryMetadata>
   readTextPreview: (path: string) => Promise<string>
+  openPath: (path: string) => Promise<{ ok: boolean; error?: string }>
   startFolderScan: (payload: { folderId: number; folderPath: string }) => Promise<{ taskId: string }>
   cancelIndexTask: (taskId: string) => Promise<{ cancelled: boolean }>
   getActiveIndexTasks: () => Promise<import('@shared/types').IndexTaskSummary[]>
@@ -34,6 +35,7 @@ const orbitApi: OrbitElectronAPI = {
   listDirectory: (path) => ipcRenderer.invoke(IPC_CHANNELS.FS_LIST_DIRECTORY, path),
   getEntryMetadata: (path) => ipcRenderer.invoke(IPC_CHANNELS.FS_GET_ENTRY_METADATA, path),
   readTextPreview: (path) => ipcRenderer.invoke(IPC_CHANNELS.FS_READ_TEXT_PREVIEW, path),
+  openPath: (path) => ipcRenderer.invoke(IPC_CHANNELS.FS_OPEN_PATH, path),
   startFolderScan: (payload) => ipcRenderer.invoke(IPC_CHANNELS.INDEX_START_SCAN, payload),
   cancelIndexTask: (taskId) => ipcRenderer.invoke(IPC_CHANNELS.INDEX_CANCEL_TASK, taskId),
   getActiveIndexTasks: () => ipcRenderer.invoke(IPC_CHANNELS.INDEX_GET_ACTIVE_TASKS),
