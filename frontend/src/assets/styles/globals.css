@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --orbit-bg: 0 0% 98%;
+    --orbit-surface: 0 0% 100%;
+    --orbit-surface-elevated: 0 0% 100%;
+    --orbit-border: 240 6% 90%;
+    --orbit-muted: 240 5% 96%;
+    --orbit-foreground: 240 10% 4%;
+    --orbit-foreground-muted: 240 4% 46%;
+    --orbit-accent: 250 84% 54%;
+    --orbit-accent-foreground: 0 0% 100%;
+    --orbit-ring: 250 84% 54%;
+    --orbit-danger: 0 72% 51%;
+  }
+
+  .dark {
+    --orbit-bg: 240 6% 6%;
+    --orbit-surface: 240 6% 9%;
+    --orbit-surface-elevated: 240 5% 12%;
+    --orbit-border: 240 4% 16%;
+    --orbit-muted: 240 4% 14%;
+    --orbit-foreground: 0 0% 98%;
+    --orbit-foreground-muted: 240 5% 64%;
+    --orbit-accent: 250 95% 68%;
+    --orbit-accent-foreground: 240 10% 4%;
+    --orbit-ring: 250 95% 68%;
+    --orbit-danger: 0 84% 60%;
+  }
+
+  * {
+    @apply border-orbit-border;
+  }
+
+  html,
+  body,
+  #root {
+    @apply h-full;
+  }
+
+  body {
+    @apply bg-orbit-bg font-sans text-orbit-foreground antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-orbit-border;
+  }
+}
