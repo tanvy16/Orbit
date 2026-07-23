@@ -10,3 +10,4 @@ chromadb>=0.6.3
 sentence-transformers>=3.4.0
 httpx>=0.28.0
 beautifulsoup4>=4.13.0
+psutil>=6.1.1

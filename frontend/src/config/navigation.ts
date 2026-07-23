@@ -29,7 +29,7 @@ export const primaryNavigation: NavigationItem[] = [
   { id: 'search', label: 'Semantic Search', path: routes.search, icon: Search },
   { id: 'documents', label: 'Documents', path: routes.documents, icon: FileText },
   { id: 'automation', label: 'Automation', path: routes.automation, icon: Workflow },
-  { id: 'analytics', label: 'Analytics', path: routes.analytics, icon: BarChart3 },
+  { id: 'analytics', label: 'System Monitor', path: routes.analytics, icon: BarChart3 },
 ]
 
 export const secondaryNavigation: NavigationItem[] = [

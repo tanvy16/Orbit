@@ -6,6 +6,7 @@ from backend.app.api.routes import (
     extensions,
     folders,
     health,
+    monitoring,
     notifications,
     search,
     settings,
@@ -22,3 +23,4 @@ api_router.include_router(tasks.router)
 api_router.include_router(search.router)
 api_router.include_router(embeddings.router)
 api_router.include_router(extensions.router)
+api_router.include_router(monitoring.router)

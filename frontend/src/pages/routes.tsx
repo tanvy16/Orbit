@@ -1,4 +1,4 @@
-import { Bot, Workflow, BarChart3, History } from 'lucide-react'
+import { Bot, Workflow, History } from 'lucide-react'
 
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 
@@ -7,6 +7,9 @@ export { DocumentsPage } from '@/pages/DocumentsPage'
 export { NotificationsPage } from '@/pages/NotificationsPage'
 export { SettingsPage } from '@/pages/SettingsPage'
 export { AboutPage } from '@/pages/AboutPage'
+export { SystemMonitorPage } from '@/pages/SystemMonitorPage'
+/** Analytics route serves live system monitor (Phase 4A). */
+export { SystemMonitorPage as AnalyticsPage } from '@/pages/SystemMonitorPage'
 
 export function CopilotPage() {
   return (
@@ -24,16 +27,6 @@ export function AutomationPage() {
       title="Automation"
       description="Workflow automation with auditable execution history."
       icon={Workflow}
-    />
-  )
-}
-
-export function AnalyticsPage() {
-  return (
-    <PlaceholderPage
-      title="Analytics"
-      description="Historical metrics and system intelligence reports."
-      icon={BarChart3}
     />
   )
 }

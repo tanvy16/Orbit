@@ -311,3 +311,64 @@ export interface RagQueryPayload {
   query: string
   topK?: number
 }
+
+export interface SystemMetricsSnapshot {
+  timestamp: number
+  cpu: {
+    usagePercent: number
+    perCorePercent: number[]
+    frequencyMhz: number | null
+    coreCount: number
+    loadHistory: number[]
+  }
+  memory: {
+    totalBytes: number
+    usedBytes: number
+    availableBytes: number
+    usagePercent: number
+    topProcesses: { pid: number; name: string; memoryBytes: number }[]
+  }
+  disk: {
+    totalBytes: number
+    usedBytes: number
+    freeBytes: number
+    usagePercent: number
+    partitions: {
+      device: string
+      mountpoint: string
+      totalBytes: number
+      usedBytes: number
+      freeBytes: number
+      usagePercent: number
+    }[]
+  }
+  network: {
+    uploadBytesPerSec: number
+    downloadBytesPerSec: number
+    bytesSentTotal: number
+    bytesRecvTotal: number
+  }
+  battery: {
+    available: boolean
+    percent: number | null
+    charging: boolean | null
+    secsLeft: number | null
+  }
+  gpu: {
+    available: boolean
+    usagePercent: number | null
+    name: string | null
+    memoryUsedMb: number | null
+    memoryTotalMb: number | null
+  }
+  processes: {
+    count: number
+    items: {
+      pid: number
+      name: string
+      cpuPercent: number
+      memoryBytes: number
+      runtimeSeconds: number
+    }[]
+  }
+}
