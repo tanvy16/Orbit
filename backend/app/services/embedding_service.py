@@ -107,27 +107,3 @@ class EmbeddingService:
             count += 1
         self.db.commit()
         return count
-
-    def stats(self) -> dict:
-        from sqlalchemy import func
-
-        total_chunks = get_chroma_store().count()
-        embedded = self.db.scalar(
-            select(func.count()).where(IndexedFile.embedding_status == "embedded")
-        ) or 0
-        pending = self.db.scalar(
-            select(func.count()).where(IndexedFile.embedding_status == "pending")
-        ) or 0
-        processing = self.db.scalar(
-            select(func.count()).where(IndexedFile.embedding_status == "processing")
-        ) or 0
-        failed = self.db.scalar(
-            select(func.count()).where(IndexedFile.embedding_status == "failed")
-        ) or 0
-        return {
-            "totalEmbeddings": total_chunks,
-            "documentsEmbedded": embedded,
-            "documentsPending": pending,
-            "documentsProcessing": processing,
-            "documentsFailed": failed,
-        }

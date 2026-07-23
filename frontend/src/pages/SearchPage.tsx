@@ -39,8 +39,16 @@ export function SearchPage() {
   const [extension, setExtension] = useState('')
   const [selectedPath, setSelectedPath] = useState<string | null>(null)
 
-  const foldersQuery = useQuery({ queryKey: ['folders'], queryFn: fetchFolders })
-  const statsQuery = useQuery({ queryKey: ['document-stats'], queryFn: fetchDocumentStats })
+  const foldersQuery = useQuery({
+    queryKey: ['folders'],
+    queryFn: fetchFolders,
+    retry: 1,
+  })
+  const statsQuery = useQuery({
+    queryKey: ['document-stats'],
+    queryFn: fetchDocumentStats,
+    retry: 1,
+  })
 
   const searchQuery = useQuery({
     queryKey: ['semantic-search', submittedQuery, page, folderId, extension],
@@ -53,6 +61,7 @@ export function SearchPage() {
         extension: extension || undefined,
       }),
     enabled: submittedQuery.length > 0,
+    retry: 1,
   })
 
   const runSearch = () => {
@@ -61,6 +70,7 @@ export function SearchPage() {
   }
 
   const extensionOptions = Object.keys(statsQuery.data?.byExtension ?? {}).sort()
+  const showSearchSpinner = searchQuery.isFetching && submittedQuery.length > 0
 
   return (
     <>
@@ -108,24 +118,27 @@ export function SearchPage() {
               </option>
             ))}
           </Select>
-          <Button onClick={runSearch} disabled={!query.trim()}>
+          <Button onClick={runSearch} disabled={!query.trim() || showSearchSpinner}>
             Search
           </Button>
         </div>
       </Card>
 
-      {searchQuery.isLoading ? (
+      {showSearchSpinner ? (
         <Spinner className="py-16" label="Searching knowledge index…" />
       ) : null}
 
-      {searchQuery.isError ? (
+      {searchQuery.isError && submittedQuery ? (
         <ErrorState
           message={searchQuery.error instanceof Error ? searchQuery.error.message : 'Search failed'}
           onRetry={() => void searchQuery.refetch()}
         />
       ) : null}
 
-      {submittedQuery && searchQuery.data && searchQuery.data.items.length === 0 && !searchQuery.isLoading ? (
+      {submittedQuery &&
+      searchQuery.isSuccess &&
+      searchQuery.data.items.length === 0 &&
+      !showSearchSpinner ? (
         <EmptyState
           icon={Search}
           title="No semantic matches"
@@ -133,7 +146,7 @@ export function SearchPage() {
         />
       ) : null}
 
-      {searchQuery.data && searchQuery.data.items.length > 0 ? (
+      {searchQuery.isSuccess && searchQuery.data.items.length > 0 ? (
         <div className="grid gap-4 lg:grid-cols-5">
           <div className="space-y-3 lg:col-span-3">
             {searchQuery.data.items.map((item) => (
@@ -147,21 +160,21 @@ export function SearchPage() {
                 onClick={() => setSelectedPath(item.path)}
               >
                 <Card className="transition-colors hover:border-orbit-accent/40">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium">{item.fileName}</p>
-                    <p className="text-xs text-orbit-foreground-muted">{item.path}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">{item.fileName}</p>
+                      <p className="text-xs text-orbit-foreground-muted">{item.path}</p>
+                    </div>
+                    <Badge variant="accent">{Math.round(item.similarity * 100)}% match</Badge>
                   </div>
-                  <Badge variant="accent">{Math.round(item.similarity * 100)}% match</Badge>
-                </div>
-                <div className="mt-3">
-                  <HighlightedSnippet text={item.snippet} />
-                </div>
-                <div className="mt-3 flex gap-2">
-                  <Badge variant="muted">{item.extension}</Badge>
-                  <Badge variant="muted">{item.embeddingStatus}</Badge>
-                </div>
-              </Card>
+                  <div className="mt-3">
+                    <HighlightedSnippet text={item.snippet} />
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <Badge variant="muted">{item.extension}</Badge>
+                    <Badge variant="muted">{item.embeddingStatus}</Badge>
+                  </div>
+                </Card>
               </div>
             ))}
 
@@ -171,11 +184,11 @@ export function SearchPage() {
                   variant="secondary"
                   size="sm"
                   disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
                 >
                   Previous
                 </Button>
-                <span className="text-xs text-orbit-foreground-muted self-center">
+                <span className="self-center text-xs text-orbit-foreground-muted">
                   Page {searchQuery.data.page} / {searchQuery.data.totalPages}
                 </span>
                 <Button
@@ -190,7 +203,7 @@ export function SearchPage() {
             ) : null}
           </div>
 
-          <Card className="lg:col-span-2 h-fit">
+          <Card className="h-fit lg:col-span-2">
             <h3 className="text-sm font-semibold">Document preview</h3>
             {selectedPath ? (
               <>

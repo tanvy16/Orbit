@@ -54,15 +54,19 @@ export interface ApiHealthResponse {
 }
 
 export interface EmbeddingStatusDto {
-  totalEmbeddings: number
   documentsEmbedded: number
   documentsPending: number
   documentsProcessing: number
   documentsFailed: number
+  documentsSkipped: number
+  vectorChunks: number
+  sqlChunkTotal: number
   chromaOk: boolean
+  chromaError?: string | null
   chromaPath: string
-  chromaVectors: number
   searchQueries: number
+  /** @deprecated use vectorChunks */
+  totalEmbeddings?: number
 }
 
 export interface SemanticSearchResultItem {

@@ -60,3 +60,25 @@ def run_migrations() -> None:
             _add_column_if_missing("notifications", col, ddl)
 
     logger.info("Database migrations applied")
+    _normalize_embedding_rows()
+
+
+def _normalize_embedding_rows() -> None:
+    """Ensure legacy indexed files participate in the embedding queue."""
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE indexed_files
+                SET embedding_status = 'pending'
+                WHERE index_status = 'indexed'
+                  AND duplicate_of_id IS NULL
+                  AND (
+                    embedding_status IS NULL
+                    OR embedding_status = ''
+                    OR embedding_status = 'processing'
+                    OR (embedding_status = 'embedded' AND (embedding_content_hash IS NULL OR embedding_content_hash != content_hash))
+                  )
+                """
+            )
+        )

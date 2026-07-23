@@ -48,7 +48,12 @@ class DocumentService:
         pending_ids: list[int] = []
         for item in payload.files:
             row = self.db.scalar(select(IndexedFile).where(IndexedFile.path == item.path))
-            if row and row.embedding_status == "pending" and row.id:
+            if not row or row.index_status != "indexed" or row.duplicate_of_id:
+                continue
+            needs_embed = row.embedding_status in (None, "pending", "failed") or (
+                row.embedding_content_hash != row.content_hash
+            )
+            if needs_embed and row.id:
                 pending_ids.append(row.id)
         for doc_id in pending_ids:
             embedding_worker.enqueue(doc_id)
@@ -66,8 +71,6 @@ class DocumentService:
         if not row:
             row = IndexedFile(path=item.path)
             self.db.add(row)
-
-        prior_embed_hash = row.embedding_content_hash
 
         row.file_name = item.fileName
         row.extension = item.extension

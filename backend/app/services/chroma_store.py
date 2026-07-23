@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from threading import Lock
+from threading import RLock
 
 import chromadb
 from chromadb.config import Settings as ChromaSettings
@@ -23,18 +23,18 @@ class ChromaStore:
             name=COLLECTION_NAME,
             metadata={"hnsw:space": "cosine"},
         )
-        self._lock = Lock()
+        # RLock: nested calls from upsert_chunks → delete must not deadlock (was blocking all API I/O).
+        self._lock = RLock()
 
-    @property
-    def collection(self):
-        return self._collection
+    def _delete_document_unlocked(self, document_id: int) -> None:
+        try:
+            self._collection.delete(where={"document_id": document_id})
+        except Exception as exc:
+            logger.debug("Chroma delete doc %s: %s", document_id, exc)
 
     def delete_document(self, document_id: int) -> None:
         with self._lock:
-            try:
-                self._collection.delete(where={"document_id": document_id})
-            except Exception as exc:
-                logger.debug("Chroma delete doc %s: %s", document_id, exc)
+            self._delete_document_unlocked(document_id)
 
     def upsert_chunks(
         self,
@@ -45,7 +45,7 @@ class ChromaStore:
         metadatas: list[dict],
     ) -> None:
         with self._lock:
-            self.delete_document(document_id)
+            self._delete_document_unlocked(document_id)
             if not ids:
                 return
             self._collection.add(
@@ -62,9 +62,12 @@ class ChromaStore:
         where: dict | None = None,
     ) -> dict:
         with self._lock:
+            count = self._collection.count()
+            if count == 0:
+                return {"ids": [[]], "distances": [[]], "documents": [[]], "metadatas": [[]]}
             kwargs: dict = {
                 "query_embeddings": [embedding],
-                "n_results": n_results,
+                "n_results": min(n_results, count),
                 "include": ["documents", "metadatas", "distances"],
             }
             if where:
@@ -74,6 +77,12 @@ class ChromaStore:
     def count(self) -> int:
         with self._lock:
             return self._collection.count()
+
+    def ping(self) -> bool:
+        """Lightweight availability check for health endpoints."""
+        with self._lock:
+            _ = self._collection.name
+            return True
 
     def reset(self) -> None:
         with self._lock:
@@ -85,10 +94,14 @@ class ChromaStore:
 
 
 _chroma_store: ChromaStore | None = None
+_chroma_init_lock = RLock()
 
 
 def get_chroma_store() -> ChromaStore:
     global _chroma_store
-    if _chroma_store is None:
-        _chroma_store = ChromaStore()
+    if _chroma_store is not None:
+        return _chroma_store
+    with _chroma_init_lock:
+        if _chroma_store is None:
+            _chroma_store = ChromaStore()
     return _chroma_store

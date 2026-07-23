@@ -3,7 +3,6 @@ from sqlalchemy import text
 
 from backend.app.core.config import settings
 from backend.app.database.session import engine
-
 from backend.app.services.chroma_store import get_chroma_store
 
 router = APIRouter(tags=["health"])
@@ -19,7 +18,7 @@ def health_check() -> dict[str, str]:
     except Exception:
         db_status = "error"
     try:
-        get_chroma_store().count()
+        get_chroma_store().ping()
     except Exception:
         chroma_status = "error"
 

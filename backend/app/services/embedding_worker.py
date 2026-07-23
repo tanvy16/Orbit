@@ -4,7 +4,8 @@ import queue
 import threading
 from typing import TYPE_CHECKING
 
-from sqlalchemy import or_, select
+from backend.app.services.search_service import _needs_embedding_clause
+from sqlalchemy import select
 
 from backend.app.core.logging import logger
 from backend.app.database.session import SessionLocal
@@ -66,12 +67,7 @@ class EmbeddingWorker:
                 select(IndexedFile.id).where(
                     IndexedFile.index_status == "indexed",
                     IndexedFile.duplicate_of_id.is_(None),
-                    or_(
-                        IndexedFile.embedding_status.is_(None),
-                        IndexedFile.embedding_status == "pending",
-                        IndexedFile.embedding_status == "failed",
-                        IndexedFile.embedding_content_hash != IndexedFile.content_hash,
-                    ),
+                    _needs_embedding_clause(),
                 )
             ).all()
             for doc_id in rows:
