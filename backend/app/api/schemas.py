@@ -19,6 +19,8 @@ class SettingsUpdate(BaseModel):
     chunkSize: int | None = Field(default=None, ge=200, le=4000)
     chunkOverlap: int | None = Field(default=None, ge=0, le=1000)
     autoEmbedOnIndex: bool | None = None
+    copilotProvider: str | None = None
+    copilotModel: str | None = None
 
 
 class WatchedFolderCreate(BaseModel):
@@ -85,3 +87,25 @@ class SemanticSearchRequest(BaseModel):
     pageSize: int = Field(default=10, ge=1, le=50)
     folderId: int | None = None
     extension: str | None = None
+
+
+class CopilotHistoryMessage(BaseModel):
+    role: str = Field(pattern="^(user|assistant)$")
+    content: str = Field(min_length=1, max_length=8000)
+
+
+class CopilotChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=4000)
+    history: list[CopilotHistoryMessage] = Field(default_factory=list)
+
+
+class CopilotChatResponse(BaseModel):
+    reply: str
+    systemContext: dict[str, Any]
+    healthSummary: dict[str, Any]
+    documentSearchUsed: bool = False
+    documentSources: list[dict[str, Any]] = Field(default_factory=list)
+    analysis: dict[str, Any] = Field(default_factory=dict)
+    recommendations: list[dict[str, Any]] = Field(default_factory=list)
+    copilotProvider: str | None = None
+    modelUsed: str | None = None

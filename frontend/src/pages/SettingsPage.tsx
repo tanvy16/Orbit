@@ -4,6 +4,7 @@ import { FolderPlus, RefreshCw, Trash2 } from 'lucide-react'
 
 import { DEFAULT_SUPPORTED_EXTENSIONS } from '@shared/types'
 
+import { OllamaModelPicker } from '@/components/settings/OllamaModelPicker'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -39,6 +40,8 @@ export function SettingsPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings'] })
       void queryClient.invalidateQueries({ queryKey: ['embedding-status'] })
+      void queryClient.invalidateQueries({ queryKey: ['ollama-models'] })
+      void queryClient.invalidateQueries({ queryKey: ['copilot-context'] })
       void window.orbit?.resyncWatcher()
     },
   })
@@ -216,6 +219,15 @@ export function SettingsPage() {
         <Card className="space-y-3">
           <h2 className="text-sm font-semibold">Embeddings & vectors</h2>
           <label className="block text-sm">
+            <span className="text-orbit-foreground-muted">Ollama base URL</span>
+            <Input
+              className="mt-1"
+              defaultValue={settings.ollamaBaseUrl}
+              placeholder="http://127.0.0.1:11434"
+              onBlur={(e) => saveMutation.mutate({ ollamaBaseUrl: e.target.value.trim() })}
+            />
+          </label>
+          <label className="block text-sm">
             <span className="text-orbit-foreground-muted">Provider</span>
             <Select
               className="mt-1 w-full"
@@ -230,14 +242,24 @@ export function SettingsPage() {
               <option value="ollama">Ollama</option>
             </Select>
           </label>
-          <label className="block text-sm">
-            <span className="text-orbit-foreground-muted">Model</span>
-            <Input
-              className="mt-1"
-              defaultValue={settings.embeddingModel}
-              onBlur={(e) => saveMutation.mutate({ embeddingModel: e.target.value })}
+          {settings.embeddingProvider === 'ollama' ? (
+            <OllamaModelPicker
+              label="Embedding model"
+              value={settings.embeddingModel}
+              baseUrl={settings.ollamaBaseUrl}
+              onChange={(embeddingModel) => saveMutation.mutate({ embeddingModel })}
             />
-          </label>
+          ) : (
+            <label className="block text-sm">
+              <span className="text-orbit-foreground-muted">Model</span>
+              <Input
+                className="mt-1"
+                defaultValue={settings.embeddingModel}
+                placeholder="all-MiniLM-L6-v2"
+                onBlur={(e) => saveMutation.mutate({ embeddingModel: e.target.value })}
+              />
+            </label>
+          )}
           <label className="flex items-center justify-between gap-4 text-sm">
             <span>Auto-generate embeddings on index</span>
             <input
@@ -274,6 +296,47 @@ export function SettingsPage() {
               Rebuild vector index
             </Button>
           </div>
+        </Card>
+
+        <Card className="space-y-3">
+          <h2 className="text-sm font-semibold">AI Copilot</h2>
+          <label className="block text-sm">
+            <span className="text-orbit-foreground-muted">LLM provider</span>
+            <Select
+              className="mt-1 w-full"
+              value={settings.copilotProvider}
+              onChange={(e) =>
+                saveMutation.mutate({
+                  copilotProvider: e.target.value as 'ollama' | 'openai',
+                })
+              }
+            >
+              <option value="ollama">Ollama (local)</option>
+              <option value="openai">OpenAI</option>
+            </Select>
+          </label>
+          {settings.copilotProvider === 'ollama' ? (
+            <OllamaModelPicker
+              label="Copilot model"
+              value={settings.copilotModel}
+              baseUrl={settings.ollamaBaseUrl}
+              onChange={(copilotModel) => saveMutation.mutate({ copilotModel })}
+            />
+          ) : (
+            <label className="block text-sm">
+              <span className="text-orbit-foreground-muted">Copilot model</span>
+              <Input
+                className="mt-1"
+                defaultValue={settings.copilotModel}
+                placeholder="gpt-4o-mini"
+                onBlur={(e) => saveMutation.mutate({ copilotModel: e.target.value })}
+              />
+            </label>
+          )}
+          <p className="text-xs text-orbit-foreground-muted">
+            OpenAI requires <code className="rounded bg-orbit-muted px-1">OPENAI_API_KEY</code> in the
+            backend environment. Ollama models are loaded from the base URL above.
+          </p>
         </Card>
 
         <Card className="space-y-3">

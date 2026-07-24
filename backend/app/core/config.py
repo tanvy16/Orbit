@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     app_name: str = "Orbit API"
     app_version: str = "0.3.0"
     orbit_chroma_path: str = Field(default_factory=lambda: str(_DEFAULT_CHROMA))
+    openai_api_key: str | None = None
 
 
 settings = Settings()

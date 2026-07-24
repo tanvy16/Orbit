@@ -21,12 +21,14 @@ DEFAULT_SETTINGS: dict = {
         "indexingErrors": True,
         "watcherEvents": False,
     },
-    "embeddingProvider": "sentence-transformers",
-    "embeddingModel": "all-MiniLM-L6-v2",
+    "embeddingProvider": "ollama",
+    "embeddingModel": "nomic-embed-text",
     "ollamaBaseUrl": "http://127.0.0.1:11434",
     "chunkSize": 800,
     "chunkOverlap": 120,
     "autoEmbedOnIndex": True,
+    "copilotProvider": "ollama",
+    "copilotModel": "gemma3:4b",
 }
 
 

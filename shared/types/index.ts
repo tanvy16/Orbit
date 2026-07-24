@@ -159,6 +159,8 @@ export interface OrbitAppSettings {
   chunkSize: number
   chunkOverlap: number
   autoEmbedOnIndex: boolean
+  copilotProvider: 'ollama' | 'openai'
+  copilotModel: string
 }
 
 export const DEFAULT_SUPPORTED_EXTENSIONS = [
@@ -221,12 +223,14 @@ export const DEFAULT_APP_SETTINGS: OrbitAppSettings = {
     indexingErrors: true,
     watcherEvents: false,
   },
-  embeddingProvider: 'sentence-transformers',
-  embeddingModel: 'all-MiniLM-L6-v2',
+  embeddingProvider: 'ollama',
+  embeddingModel: 'nomic-embed-text',
   ollamaBaseUrl: 'http://127.0.0.1:11434',
   chunkSize: 800,
   chunkOverlap: 120,
   autoEmbedOnIndex: true,
+  copilotProvider: 'ollama',
+  copilotModel: 'gemma3:4b',
 }
 
 export interface WatchedFolderDto {
@@ -371,4 +375,64 @@ export interface SystemMetricsSnapshot {
       runtimeSeconds: number
     }[]
   }
+}
+
+export interface CopilotSystemContext {
+  cpuPercent?: number
+  ramPercent?: number
+  diskPercent?: number
+  batteryPercent?: number | null
+  batteryCharging?: boolean | null
+  processCount?: number
+  gpuPercent?: number | null
+}
+
+export interface CopilotHealthSummary {
+  score: number
+  performance: string
+  detectedIssues: string[]
+  recommendations: string[]
+}
+
+export interface OllamaModelDto {
+  name: string
+  sizeBytes: number
+  modifiedAt: string | null
+  digest?: string | null
+}
+
+export interface OllamaModelsResponse {
+  ok: boolean
+  baseUrl: string
+  models: OllamaModelDto[]
+  error: string | null
+}
+
+export interface CopilotRecommendation {
+  severity: 'high' | 'medium' | 'low' | string
+  title: string
+  detail: string
+  action: string
+}
+
+export interface CopilotHistoryMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface CopilotChatResponse {
+  reply: string
+  systemContext: CopilotSystemContext
+  healthSummary: CopilotHealthSummary
+  documentSearchUsed?: boolean
+  documentSources: {
+    documentId?: number
+    fileName?: string
+    path?: string
+    similarity?: number
+  }[]
+  analysis: Record<string, unknown>
+  recommendations?: CopilotRecommendation[]
+  copilotProvider?: string
+  modelUsed?: string
 }
