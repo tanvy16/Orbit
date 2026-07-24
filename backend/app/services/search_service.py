@@ -51,7 +51,12 @@ class SearchService:
             settings.get("ollamaBaseUrl", "http://127.0.0.1:11434"),
         )
         try:
-            query_vector = provider.embed_texts([trimmed])[0]
+            from backend.ai.copilot_cache import get_cached_query_embedding
+
+            query_vector = get_cached_query_embedding(
+                trimmed,
+                lambda: provider.embed_texts([trimmed])[0],
+            )
         except Exception as exc:
             logger.exception("Query embedding failed")
             raise RuntimeError(f"Embedding model unavailable: {exc}") from exc

@@ -36,8 +36,11 @@ Stay concise, professional, and accurate. Do not invent process names or metrics
 ORBIT_COPILOT_SYSTEM_BRIEF = """You are Orbit, a helpful desktop AI assistant embedded in the Orbit app.
 Answer clearly and concisely. For greetings or general questions, keep replies short and friendly."""
 
+ORBIT_COPILOT_SYSTEM_COMPACT = """You are Orbit, a desktop intelligence assistant.
+Answer using only the telemetry and context provided. Be concise and actionable.
+For performance issues use Problem / Evidence / Recommendation when helpful.
+Do not invent metrics or process names."""
+
 RAG_CONTEXT_HEADER = """Relevant indexed document excerpts (semantic search):"""
 
 TELEMETRY_CONTEXT_HEADER = """Live system telemetry snapshot:"""
-
-ANALYSIS_CONTEXT_HEADER = """Structured Orbit analysis:"""

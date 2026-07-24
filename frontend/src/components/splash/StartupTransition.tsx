@@ -37,7 +37,6 @@ export function StartupTransition({ children }: StartupTransitionProps) {
           <SplashScreen
             statusMessage={statusMessage}
             phase={phase === 'transition' ? 'transition' : 'splash'}
-            reduceMotion={reduceMotion}
           />
         ) : null}
       </div>

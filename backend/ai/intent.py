@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import re
 
+from backend.ai.direct import classify_hybrid_route
+from backend.ai.query_patterns import is_document_search_query, needs_generation, needs_reasoning
+
 # Document-oriented vocabulary (substring match on lowercased message).
 _DOCUMENT_KEYWORDS: frozenset[str] = frozenset(
     {
@@ -25,6 +28,17 @@ _DOCUMENT_KEYWORDS: frozenset[str] = frozenset(
         "indexed",
         "knowledge base",
         "documentation",
+        "mention",
+        "mentions",
+        "mentioning",
+        "containing",
+        "contains",
+        "about",
+        "topic",
+        "subject",
+        "machine learning",
+        "research",
+        "paper",
     }
 )
 
@@ -45,12 +59,23 @@ _FILE_MARKERS: tuple[str, ...] = (
     "notes.pdf",
     "what does ",
     " contain",
+    "what documents",
+    "which files",
+    "which documents",
+    "documents about",
+    "files about",
+    "documents mention",
+    "files mention",
+    "search for",
+    "search my files",
+    "search my documents",
 )
 
 _SYSTEM_MARKERS: tuple[str, ...] = (
     "duplicate file",
     "duplicate files",
     "find duplicates",
+    "list duplicate",
     "near duplicate",
     "ssd health",
     "smart data",
@@ -136,10 +161,27 @@ _INDEXING_MARKERS: tuple[str, ...] = (
     "knowledge base",
 )
 
+_GENERATION_MARKERS: tuple[str, ...] = (
+    "summarize",
+    "summarise",
+    "explain",
+    "analyze",
+    "analyse",
+    "recommend",
+    "compare",
+    "rewrite",
+    "draft",
+    "write",
+    "generate",
+)
+
 
 def should_use_rag(message: str) -> bool:
     text = message.strip().lower()
     if not text:
+        return False
+
+    if is_document_search_query(text):
         return False
 
     if any(marker in text for marker in _FILE_MARKERS):
@@ -149,10 +191,35 @@ def should_use_rag(message: str) -> bool:
         return False
 
     if re.search(r"\b(cpu|ram|memory|battery|disk|storage|gpu|process(es)?)\b", text):
-        if not any(kw in text for kw in ("document", "file", "pdf", "report", "invoice", "notes")):
+        if not any(kw in text for kw in ("document", "file", "pdf", "report", "invoice", "notes", "mention")):
             return False
 
     return any(keyword in text for keyword in _DOCUMENT_KEYWORDS)
+
+
+def needs_llm(message: str) -> bool:
+    """True when natural-language generation or reasoning is required."""
+    route = classify_hybrid_route(message)
+    if route:
+        return False
+
+    text = message.strip().lower()
+    if _is_casual(text):
+        return True
+
+    if needs_generation(text) or needs_reasoning(text):
+        return True
+
+    if should_use_rag(text):
+        return True
+
+    if any(marker in text for marker in _SYSTEM_MARKERS):
+        return True
+
+    if re.search(r"\b(cpu|ram|memory|battery|disk|storage|gpu|slow|performance)\b", text):
+        return True
+
+    return True
 
 
 def _is_casual(text: str) -> bool:
@@ -168,8 +235,28 @@ def _is_casual(text: str) -> bool:
     return any(normalized.startswith(f"{phrase} ") for phrase in _CASUAL_EXACT)
 
 
-def classify_intents(message: str) -> dict[str, bool]:
+def classify_intents(message: str) -> dict[str, bool | str | None]:
     text = message.strip().lower()
+    route = classify_hybrid_route(message)
+    if route:
+        query_type = route["type"]
+        return {
+            "direct_answer": True,
+            "direct_query": query_type,
+            "needs_llm": False,
+            "casual": False,
+            "general": False,
+            "rag": query_type == "document_search",
+            "duplicates": query_type == "duplicates_list",
+            "duplicates_semantic": bool((route.get("params") or {}).get("include_semantic")),
+            "storage_health": False,
+            "health_report": False,
+            "telemetry": query_type in {"cpu", "ram", "disk", "gpu", "battery", "network", "processes", "process_count", "system_health"},
+            "processes": query_type in {"processes", "process_count"},
+            "indexing": query_type in {"indexed_documents", "embeddings", "vector_chunks", "chroma_status"},
+            "recommendations": False,
+        }
+
     casual = _is_casual(text)
     rag = False if casual else should_use_rag(message)
     duplicates = any(
@@ -193,29 +280,34 @@ def classify_intents(message: str) -> dict[str, bool]:
             "system health",
             "how is my computer",
         )
+    ) and any(marker in text for marker in _GENERATION_MARKERS)
+    processes = not casual and bool(
+        any(marker in text for marker in _PROCESS_MARKERS)
+        or (
+            re.search(r"\b(using|consumer|hog)\b", text)
+            and re.search(r"\b(ram|memory)\b", text)
+        )
     )
     telemetry = not casual and (
-        health_report
+        processes
+        or health_report
         or storage_health
         or duplicates
         or any(marker in text for marker in _SYSTEM_MARKERS)
         or bool(re.search(r"\b(cpu|ram|memory|battery|disk|storage|gpu|slow|performance)\b", text))
     )
-    processes = not casual and (
-        duplicates
-        or health_report
-        or any(marker in text for marker in _PROCESS_MARKERS)
-        or bool(re.search(r"\b(process|processes|slow|ram|memory|cpu)\b", text))
-    )
     indexing = not casual and (
         rag
         or any(marker in text for marker in _INDEXING_MARKERS)
-        or "index" in text
+        or re.search(r"\bindex(ing|ed)\b", text) is not None
     )
     recommendations = not casual and (
-        telemetry or health_report or storage_health or duplicates or indexing
+        health_report
+        or storage_health
+        or duplicates
+        or "recommend" in text
+        or "recommendation" in text
     )
-
     general = (
         not casual
         and not rag
@@ -226,6 +318,9 @@ def classify_intents(message: str) -> dict[str, bool]:
     )
 
     return {
+        "direct_answer": False,
+        "direct_query": None,
+        "needs_llm": needs_llm(message),
         "casual": casual,
         "general": general,
         "rag": rag,

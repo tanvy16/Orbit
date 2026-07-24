@@ -435,4 +435,6 @@ export interface CopilotChatResponse {
   recommendations?: CopilotRecommendation[]
   copilotProvider?: string
   modelUsed?: string
+  directAnswer?: boolean
+  profile?: Record<string, number>
 }

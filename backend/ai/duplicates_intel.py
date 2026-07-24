@@ -32,7 +32,7 @@ def exact_duplicate_groups(db: Session, *, limit: int = 8) -> list[dict]:
     ).all()
 
     groups: list[dict] = []
-    for content_hash, _count in hash_rows:
+    for content_hash, count in hash_rows:
         if not content_hash:
             continue
         members = list(
@@ -42,19 +42,27 @@ def exact_duplicate_groups(db: Session, *, limit: int = 8) -> list[dict]:
                     IndexedFile.content_hash == content_hash,
                     IndexedFile.index_status == "indexed",
                 )
-                .limit(6)
+                .limit(8)
             ).all()
         )
         if len(members) < 2:
             continue
+        size_bytes = int(members[0].size_bytes or 0)
+        reclaimable = size_bytes * (len(members) - 1)
         groups.append(
             {
                 "type": "exact",
                 "hash": content_hash[:12] + "…",
                 "confidence": 1.0,
                 "reason": "Identical SHA-256 content hash",
+                "count": count,
+                "reclaimableBytes": reclaimable,
                 "files": [
-                    {"fileName": m.file_name, "path": m.path, "sizeBytes": m.size_bytes}
+                    {
+                        "fileName": m.file_name,
+                        "path": m.path,
+                        "sizeBytes": m.size_bytes,
+                    }
                     for m in members
                 ],
             }
@@ -62,34 +70,42 @@ def exact_duplicate_groups(db: Session, *, limit: int = 8) -> list[dict]:
     return groups
 
 
-def near_duplicate_pairs(db: Session, *, limit: int = 5) -> list[dict]:
+def near_duplicate_pairs(db: Session, *, limit: int = 8) -> list[dict]:
     """Filename similarity heuristic (same extension, high name match)."""
     rows = list(
         db.scalars(
             select(IndexedFile)
             .where(IndexedFile.index_status == "indexed", IndexedFile.duplicate_of_id.is_(None))
             .order_by(IndexedFile.file_name)
-            .limit(120)
+            .limit(160)
         ).all()
     )
     pairs: list[dict] = []
+    seen_pairs: set[tuple[int, int]] = set()
     for i, a in enumerate(rows):
-        for b in rows[i + 1 : i + 40]:
+        for b in rows[i + 1 : i + 45]:
+            pair_key = tuple(sorted((a.id, b.id)))
+            if pair_key in seen_pairs:
+                continue
             if a.extension and a.extension != b.extension:
                 continue
             ratio = SequenceMatcher(None, a.file_name.lower(), b.file_name.lower()).ratio()
-            if ratio < 0.82:
+            same_size = a.size_bytes and b.size_bytes and a.size_bytes == b.size_bytes
+            threshold = 0.78 if same_size else 0.82
+            if ratio < threshold:
                 continue
             if a.content_hash and b.content_hash and a.content_hash == b.content_hash:
                 continue
+            seen_pairs.add(pair_key)
             pairs.append(
                 {
                     "type": "near",
                     "confidence": round(ratio, 3),
-                    "reason": "Similar filenames (possible renamed or revised copy)",
+                    "reason": "Similar filenames"
+                    + (" and identical size" if same_size else " (possible renamed copy)"),
                     "files": [
-                        {"fileName": a.file_name, "path": a.path},
-                        {"fileName": b.file_name, "path": b.path},
+                        {"fileName": a.file_name, "path": a.path, "sizeBytes": a.size_bytes},
+                        {"fileName": b.file_name, "path": b.path, "sizeBytes": b.size_bytes},
                     ],
                 }
             )
@@ -109,7 +125,7 @@ def semantic_near_duplicate_pairs(db: Session, *, limit: int = 3) -> list[dict]:
                 IndexedFile.embedding_status == "embedded",
             )
             .order_by(IndexedFile.modified_at.desc())
-            .limit(5)
+            .limit(8)
         ).all()
     )
     if not candidates:
@@ -125,7 +141,7 @@ def semantic_near_duplicate_pairs(db: Session, *, limit: int = 3) -> list[dict]:
         for item in result.get("items") or []:
             other_id = item.get("documentId")
             similarity = float(item.get("similarity") or 0)
-            if other_id == doc.id or similarity < 0.88:
+            if other_id == doc.id or similarity < 0.86:
                 continue
             pairs.append(
                 {
@@ -147,15 +163,69 @@ def semantic_near_duplicate_pairs(db: Session, *, limit: int = 3) -> list[dict]:
     return pairs
 
 
+def collect_duplicate_groups(
+    db: Session,
+    *,
+    include_near_filename: bool = True,
+    include_semantic: bool = False,
+) -> dict:
+    exact = exact_duplicate_groups(db)
+    near = near_duplicate_pairs(db) if include_near_filename else []
+    semantic = semantic_near_duplicate_pairs(db) if include_semantic else []
+    reclaimable = sum(int(g.get("reclaimableBytes") or 0) for g in exact)
+    return {
+        "exact": exact,
+        "near": near,
+        "semantic": semantic,
+        "totalGroups": len(exact) + len(near) + len(semantic),
+        "reclaimableBytes": reclaimable,
+    }
+
+
+def format_duplicates_reply(groups: dict) -> str:
+    exact = groups.get("exact") or []
+    near = groups.get("near") or []
+    semantic = groups.get("semantic") or []
+    reclaimable = int(groups.get("reclaimableBytes") or 0)
+
+    if not exact and not near and not semantic:
+        return "No duplicate file clusters were detected in your indexed files."
+
+    lines: list[str] = []
+    if exact:
+        lines.append(f"**Exact duplicates:** {len(exact)} group(s)")
+        if reclaimable > 0:
+            lines.append(f"- Potential space to reclaim: **{_format_bytes(reclaimable)}**")
+        for group in exact:
+            names = ", ".join(f["fileName"] for f in group["files"])
+            lines.append(f"- {names} ({len(group['files'])} copies)")
+    if near:
+        lines.append(f"\n**Near duplicates (filename):** {len(near)} pair(s)")
+        for group in near[:8]:
+            names = " vs ".join(f["fileName"] for f in group["files"])
+            lines.append(f"- {names} (confidence {group['confidence']})")
+    if semantic:
+        lines.append(f"\n**Near duplicates (semantic):** {len(semantic)} pair(s)")
+        for group in semantic[:5]:
+            names = " vs ".join(f["fileName"] for f in group["files"])
+            lines.append(f"- {names} (confidence {group['confidence']})")
+    return "\n".join(lines)
+
+
 def build_duplicates_context(
     db: Session,
     *,
     include_near_filename: bool = False,
     include_semantic: bool = False,
 ) -> str:
-    exact = exact_duplicate_groups(db)
-    near = near_duplicate_pairs(db) if include_near_filename or include_semantic else []
-    semantic = semantic_near_duplicate_pairs(db) if include_semantic else []
+    groups = collect_duplicate_groups(
+        db,
+        include_near_filename=include_near_filename,
+        include_semantic=include_semantic,
+    )
+    exact = groups["exact"]
+    near = groups["near"]
+    semantic = groups["semantic"]
     if not exact and not near and not semantic:
         return "No duplicate file clusters detected in the index."
 

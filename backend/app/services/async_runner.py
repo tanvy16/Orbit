@@ -10,7 +10,7 @@ from backend.app.core.logging import logger
 T = TypeVar("T")
 
 # CPU-bound work (embeddings, model load) off the FastAPI event loop.
-_cpu_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="orbit-cpu")
+_cpu_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="orbit-cpu")
 
 
 async def run_cpu_bound(func: Callable[[], T], *, timeout_seconds: float = 120.0) -> T:

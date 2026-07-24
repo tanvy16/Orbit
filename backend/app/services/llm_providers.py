@@ -15,8 +15,10 @@ from backend.app.core.logging import logger
 DEFAULT_COPILOT_MODEL = "gemma3:4b"
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
 LLM_TIMEOUT_SECONDS = 120.0
-MAX_HISTORY_MESSAGES = 6
+MAX_HISTORY_MESSAGES = 8
 OLLAMA_KEEP_ALIVE = "10m"
+OLLAMA_NUM_PREDICT = 512
+OLLAMA_NUM_CTX = 4096
 
 _HTTP_CLIENTS: dict[str, httpx.Client] = {}
 
@@ -80,11 +82,26 @@ class OllamaChatProvider(LLMProvider):
         *,
         stream: bool,
     ) -> dict[str, Any]:
+        messages = _build_messages(system_prompt, user_prompt, history)
+        prompt_chars = sum(len(item.get("content", "")) for item in messages)
+        logger.info(
+            "Copilot Ollama payload model=%s stream=%s promptChars=%s historyMsgs=%s",
+            self._model,
+            stream,
+            prompt_chars,
+            max(0, len(messages) - 2),
+        )
         return {
             "model": self._model,
             "stream": stream,
             "keep_alive": OLLAMA_KEEP_ALIVE,
-            "messages": _build_messages(system_prompt, user_prompt, history),
+            "messages": messages,
+            "options": {
+                "temperature": 0.35,
+                "top_p": 0.9,
+                "num_predict": OLLAMA_NUM_PREDICT,
+                "num_ctx": OLLAMA_NUM_CTX,
+            },
         }
 
     def complete(

@@ -7,9 +7,9 @@ from backend.monitoring.aggregator import collect_light_snapshot, collect_snapsh
 _FULL_CACHE: dict = {"at_ms": 0.0, "snapshot": None}
 _LIGHT_CACHE: dict = {"at_ms": 0.0, "snapshot": None}
 
-FULL_TTL_MS = 2500
-LIGHT_TTL_MS = 2500
-PROCESS_TTL_MS = 2500
+FULL_TTL_MS = 5000
+LIGHT_TTL_MS = 5000
+PROCESS_TTL_MS = 5000
 
 
 def get_cached_snapshot(*, force: bool = False, include_processes: bool = True) -> dict:

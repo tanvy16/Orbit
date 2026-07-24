@@ -109,3 +109,5 @@ class CopilotChatResponse(BaseModel):
     recommendations: list[dict[str, Any]] = Field(default_factory=list)
     copilotProvider: str | None = None
     modelUsed: str | None = None
+    directAnswer: bool = False
+    profile: dict[str, Any] | None = None

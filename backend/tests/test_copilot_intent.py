@@ -17,6 +17,13 @@ def test_document_uses_rag():
     assert should_use_rag("Find invoice") is True
 
 
+def test_document_mention_is_hybrid_not_rag_llm():
+    assert should_use_rag("What documents mention machine learning?") is False
+    intents = classify_intents("What documents mention machine learning?")
+    assert intents["direct_answer"] is True
+    assert intents["rag"] is True
+
+
 def test_casual_is_llm_only():
     intents = classify_intents("Hello")
     assert intents["casual"] is True
@@ -30,7 +37,8 @@ def test_system_question_runs_telemetry_only():
     assert intents["casual"] is False
     assert intents["rag"] is False
     assert intents["telemetry"] is True
-    assert intents["processes"] is True
+    assert intents["processes"] is False
+    assert intents["recommendations"] is False
     assert intents["indexing"] is False
 
 
@@ -41,7 +49,14 @@ def test_general_is_llm_only():
     assert intents["rag"] is False
 
 
+def test_process_question_runs_process_scan():
+    intents = classify_intents("Why are so many processes running")
+    assert intents["telemetry"] is True
+    assert intents["processes"] is True
+
+
 def test_duplicate_question_runs_duplicate_path():
     intents = classify_intents("Find duplicate files")
     assert intents["duplicates"] is True
+    assert intents["direct_answer"] is True
     assert intents["rag"] is False

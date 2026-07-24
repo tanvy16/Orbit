@@ -57,12 +57,17 @@ async def copilot_chat_stream(payload: CopilotChatRequest, request: Request) -> 
         def _prepare() -> dict:
             thread_db = SessionLocal()
             try:
-                return CopilotService(thread_db).prepare_chat(payload.message, history=history)
+                service = CopilotService(thread_db)
+                direct = service.try_direct_response(payload.message)
+                if direct:
+                    return {"mode": "direct", "response": direct}
+                prepared = service.prepare_chat(payload.message, history=history)
+                return {"mode": "llm", "prepared": prepared}
             finally:
                 thread_db.close()
 
         try:
-            prepared = await run_cpu_bound(_prepare, timeout_seconds=90.0)
+            result = await run_cpu_bound(_prepare, timeout_seconds=90.0)
         except ValueError as exc:
             yield f"data: {json.dumps({'type': 'error', 'detail': str(exc)})}\n\n"
             return
@@ -73,6 +78,13 @@ async def copilot_chat_stream(payload: CopilotChatRequest, request: Request) -> 
             yield f"data: {json.dumps({'type': 'error', 'detail': f'Copilot context failed: {exc}'})}\n\n"
             return
 
+        if result["mode"] == "direct":
+            response = result["response"]
+            yield f"data: {json.dumps({'type': 'ready', 'profile': response.get('profile', {}), 'directAnswer': True})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', **response})}\n\n"
+            return
+
+        prepared = result["prepared"]
         yield f"data: {json.dumps({'type': 'ready', 'profile': prepared.get('meta', {}).get('profile', {})})}\n\n"
 
         thread_queue: queue.Queue[tuple[str, object]] = queue.Queue()
@@ -91,6 +103,7 @@ async def copilot_chat_stream(payload: CopilotChatRequest, request: Request) -> 
 
         threading.Thread(target=worker, daemon=True).start()
 
+        # Client disconnect stops SSE delivery; the worker may finish the LLM call in background.
         while True:
             if await request.is_disconnected():
                 return

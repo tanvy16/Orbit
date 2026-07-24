@@ -37,9 +37,10 @@ def analyze_performance(telemetry: dict) -> dict:
     usage = float(cpu.get("usagePercent", 0))
     history = cpu.get("loadHistory") or []
     avg_hist = sum(history) / len(history) if history else usage
+    peak = max([usage, *history]) if history else usage
 
     pressure = "low"
-    if usage >= 85 or avg_hist >= 75:
+    if usage >= 85 or avg_hist >= 75 or peak >= 90:
         pressure = "high"
     elif usage >= 60 or avg_hist >= 50:
         pressure = "moderate"
@@ -53,6 +54,7 @@ def analyze_performance(telemetry: dict) -> dict:
     return {
         "cpuUsagePercent": usage,
         "cpuAverageHistory": round(avg_hist, 1),
+        "cpuPeakPercent": round(float(peak), 1),
         "pressure": pressure,
         "issues": issues,
         "summary": f"CPU at {usage:.0f}% ({pressure} pressure).",
@@ -77,10 +79,16 @@ def analyze_memory(telemetry: dict) -> dict:
     top_lines = [
         f"{p.get('name', 'unknown')} — {_format_bytes(int(p.get('memoryBytes', 0)))}" for p in top[:5]
     ]
+    dominant = top[0] if top else None
+    dominant_share = 0.0
+    if dominant and total > 0:
+        dominant_share = round(int(dominant.get("memoryBytes", 0)) / total * 100, 1)
 
     issues: list[str] = []
     if pressure in ("high", "critical"):
         issues.append(f"Memory usage at {pct:.0f}% ({_format_bytes(used)} / {_format_bytes(total)})")
+    if dominant_share >= 35 and dominant:
+        issues.append(f"{dominant.get('name')} using ~{dominant_share:.0f}% of RAM")
 
     return {
         "usagePercent": pct,
@@ -88,6 +96,8 @@ def analyze_memory(telemetry: dict) -> dict:
         "totalBytes": total,
         "pressure": pressure,
         "topConsumers": top_lines,
+        "dominantProcess": dominant.get("name") if dominant else None,
+        "dominantSharePercent": dominant_share,
         "issues": issues,
         "summary": f"RAM {pct:.0f}% used; top: {top_lines[0] if top_lines else 'n/a'}.",
     }
@@ -149,6 +159,11 @@ def generate_health_summary(telemetry: dict) -> dict:
     elif mem["pressure"] == "moderate":
         score -= 8
 
+    if mem.get("dominantSharePercent", 0) >= 35 and mem.get("dominantProcess"):
+        if f"{mem['dominantProcess']} consuming significant RAM" not in issues:
+            issues.append(f"{mem['dominantProcess']} consuming significant RAM")
+            recommendations.append(f"Inspect or restart {mem['dominantProcess']} if memory keeps climbing")
+
     if disk_pct >= 92:
         score -= 20
         issues.append("Storage nearly full")
@@ -156,6 +171,11 @@ def generate_health_summary(telemetry: dict) -> dict:
     elif disk_pct >= 85:
         score -= 10
         issues.append("Low storage headroom")
+
+    if perf["pressure"] != "low" and mem["pressure"] in ("high", "critical"):
+        if "Combined CPU and memory pressure" not in issues:
+            issues.append("Combined CPU and memory pressure")
+            recommendations.append("Reduce active workloads — both CPU and RAM are under strain")
 
     if bat.get("available") and bat.get("percent") is not None and bat["percent"] < 20 and not bat.get("charging"):
         score -= 10
@@ -185,9 +205,10 @@ def generate_health_summary(telemetry: dict) -> dict:
     }
 
 
-def build_analysis_bundle(telemetry: dict) -> dict:
-    temps = read_temperatures()
-    enriched = {**telemetry, "temperatures": temps}
+def build_analysis_bundle(telemetry: dict, *, include_temperatures: bool = False) -> dict:
+    enriched = telemetry
+    if include_temperatures:
+        enriched = {**telemetry, "temperatures": read_temperatures()}
     return {
         "telemetry": enriched,
         "performance": analyze_performance(enriched),

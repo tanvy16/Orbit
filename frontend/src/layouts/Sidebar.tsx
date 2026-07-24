@@ -39,12 +39,7 @@ export function Sidebar() {
         )}
       >
         {showBrandLogo ? (
-          <AnimatedLogo
-            variant="sidebar"
-            layoutId
-            showGlow={false}
-            className={cn(collapsed && 'h-8 max-w-[2.5rem]')}
-          />
+          <AnimatedLogo className={cn(collapsed && 'h-8 max-w-[2.5rem]')} />
         ) : (
           <div className={cn('shrink-0', collapsed ? 'h-8 w-8' : 'h-10 w-10')} aria-hidden />
         )}

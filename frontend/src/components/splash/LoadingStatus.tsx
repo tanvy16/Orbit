@@ -11,11 +11,11 @@ export function LoadingStatus({ message, className }: LoadingStatusProps) {
       <AnimatePresence mode="wait">
         <motion.p
           key={message}
-          initial={{ opacity: 0, y: 6 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          transition={{ duration: 0.28, ease: 'easeOut' }}
-          className="text-sm font-medium tracking-wide text-violet-200/70"
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
+          className="text-sm font-medium tracking-[0.04em] text-white/50"
           role="status"
           aria-live="polite"
         >
