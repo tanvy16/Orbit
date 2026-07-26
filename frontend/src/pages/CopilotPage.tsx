@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query'
 import { Send, Sparkles, Square } from 'lucide-react'
 import { useState } from 'react'
 
@@ -9,17 +8,32 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ErrorState } from '@/components/ui/ErrorState'
-import { Input } from '@/components/ui/Input'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { Spinner } from '@/components/ui/Spinner'
+import { Skeleton } from '@/components/ui/Skeleton'
+import { Textarea } from '@/components/ui/Textarea'
 import { useCopilotChat } from '@/hooks/use-copilot-chat'
 import { useCopilotTelemetry } from '@/hooks/use-copilot-telemetry'
 import { fetchCopilotContext } from '@/services/copilot-api'
+import { toast } from '@/stores/toast-store'
+import { useQuery } from '@tanstack/react-query'
 
 export function CopilotPage() {
   const [input, setInput] = useState('')
-  const { messages, isBusy, isPreparing, error, sendMessage, cancel, retryLast } =
-    useCopilotChat()
+  const {
+    messages,
+    isBusy,
+    isPreparing,
+    preparingLabel,
+    actionBusyId,
+    error,
+    sendMessage,
+    cancel,
+    retryLast,
+    regenerateLast,
+    copyMessage,
+    confirmDesktopAction,
+    chooseDesktopFile,
+  } = useCopilotChat()
   const telemetry = useCopilotTelemetry()
 
   const insightsQuery = useQuery({
@@ -35,6 +49,15 @@ export function CopilotPage() {
     if (!text || isBusy) return
     setInput('')
     await sendMessage(text)
+  }
+
+  const handleCopy = async (content: string) => {
+    const ok = await copyMessage(content)
+    toast({
+      level: ok ? 'success' : 'error',
+      title: ok ? 'Copied to clipboard' : 'Copy failed',
+    })
+    return ok
   }
 
   return (
@@ -57,10 +80,10 @@ export function CopilotPage() {
         }
       />
 
-      <Card className="mb-4 border-orbit-accent/20 bg-orbit-accent/5">
+      <Card className="mb-4 border-orbit-accent/20 bg-orbit-accent/5" interactive={false}>
         <p className="text-sm text-orbit-foreground">
-          Orbit automatically chooses live telemetry, document search, or both based on your
-          question — no mode switching required.
+          Orbit automatically chooses live telemetry, document search, desktop actions, or reasoning
+          based on your question — no mode switching required.
         </p>
       </Card>
 
@@ -70,8 +93,13 @@ export function CopilotPage() {
             <CopilotMessageList
               messages={messages}
               isPreparing={isPreparing}
-              preparingLabel="Analyzing your request…"
-              streamingLabel="Orbit is thinking…"
+              preparingLabel={preparingLabel}
+              actionBusyId={actionBusyId}
+              onDesktopActionConfirm={confirmDesktopAction}
+              onDesktopActionChoose={chooseDesktopFile}
+              onCopy={handleCopy}
+              onRegenerate={() => void regenerateLast()}
+              canRegenerate={!isBusy}
             />
 
             {error ? (
@@ -80,16 +108,18 @@ export function CopilotPage() {
                   compact
                   title="Copilot unavailable"
                   message={error}
+                  technicalDetail={error}
                   onRetry={() => void retryLast()}
                 />
               </div>
             ) : null}
 
-            <div className="mt-4 flex flex-col gap-2 border-t border-orbit-border pt-4 sm:flex-row">
-              <Input
-                className="flex-1"
+            <div className="mt-4 flex flex-col gap-2 border-t border-orbit-border pt-4 sm:flex-row sm:items-end">
+              <Textarea
+                className="min-h-[52px] flex-1 sm:min-h-[44px]"
                 placeholder="Ask Orbit about your system or documents…"
                 value={input}
+                rows={2}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -136,8 +166,9 @@ export function CopilotPage() {
           )}
 
           {insightsQuery.isLoading && !insightsQuery.data ? (
-            <Card>
-              <Spinner size="sm" label="Loading health insights…" />
+            <Card interactive={false}>
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="mt-4 h-10 w-20" />
             </Card>
           ) : null}
 

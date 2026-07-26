@@ -13,7 +13,7 @@ _STREAM_INTERVAL_SEC = 2.5
 
 
 @router.get("/snapshot")
-def monitoring_snapshot(includeProcesses: bool = Query(default=False)) -> dict:
+def monitoring_snapshot(includeProcesses: bool = Query(default=True)) -> dict:
     return get_cached_snapshot(include_processes=includeProcesses)
 
 
@@ -22,7 +22,7 @@ async def monitoring_stream(websocket: WebSocket) -> None:
     await websocket.accept()
     try:
         while True:
-            payload = await asyncio.to_thread(get_cached_snapshot, include_processes=False)
+            payload = await asyncio.to_thread(get_cached_snapshot, include_processes=True)
             await websocket.send_json(payload)
             await asyncio.sleep(_STREAM_INTERVAL_SEC)
     except WebSocketDisconnect:

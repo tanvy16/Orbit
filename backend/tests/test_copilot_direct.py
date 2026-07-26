@@ -10,7 +10,7 @@ def test_direct_cpu_skips_llm():
     intents = classify_intents("What is my CPU usage?")
     assert intents["direct_answer"] is True
     assert intents["needs_llm"] is False
-    assert intents["telemetry"] is False
+    assert intents["telemetry"] is True
     assert intents["rag"] is False
 
 

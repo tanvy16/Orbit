@@ -16,6 +16,7 @@ export const IPC_CHANNELS = {
   AI_INVOKE: 'orbit:ai:invoke',
   MONITOR_SUBSCRIBE: 'orbit:monitor:subscribe',
   AUTOMATION_RUN: 'orbit:automation:run',
+  DESKTOP_ACTION_EXECUTE: 'orbit:desktop:execute-action',
   SEMANTIC_SEARCH: 'orbit:search:semantic',
   RAG_QUERY: 'orbit:rag:query',
 } as const
@@ -230,7 +231,7 @@ export const DEFAULT_APP_SETTINGS: OrbitAppSettings = {
   chunkOverlap: 120,
   autoEmbedOnIndex: true,
   copilotProvider: 'ollama',
-  copilotModel: 'gemma3:4b',
+  copilotModel: 'qwen3:8b',
 }
 
 export interface WatchedFolderDto {
@@ -377,6 +378,84 @@ export interface SystemMetricsSnapshot {
   }
 }
 
+export interface IntelligenceHealthFactor {
+  score: number
+  label: string
+}
+
+export interface IntelligenceOverview {
+  timestamp: number
+  health: CopilotHealthSummary & {
+    factors: Record<string, IntelligenceHealthFactor>
+    explanation: string
+  }
+  recommendations: CopilotRecommendation[]
+  timeline: IntelligenceTimelineEvent[]
+  resources: {
+    cpu: { usagePercent: number; summary?: string }
+    memory: { usagePercent: number; summary?: string }
+    disk: { usagePercent: number; freeBytes: number }
+    network: { downloadBytesPerSec: number; uploadBytesPerSec: number }
+    gpu: SystemMetricsSnapshot['gpu']
+    battery: SystemMetricsSnapshot['battery']
+  }
+  processes: SystemMetricsSnapshot['processes']
+  collectionMs?: number
+}
+
+export interface IntelligenceTimelineEvent {
+  id: string
+  type: string
+  message: string
+  timestamp: number
+  metadata?: Record<string, unknown>
+}
+
+export interface ProcessClassification {
+  label: string
+  evidence: string
+}
+
+export interface ProcessIntelligenceDetail {
+  pid: number
+  name: string
+  parentPid?: number
+  executablePath?: string | null
+  commandLine?: string | null
+  startTime?: number
+  runtimeSeconds: number
+  threadCount: number
+  handleCount?: number | null
+  cpuPercent: number
+  memoryBytes: number
+  privateBytes?: number
+  virtualBytes?: number
+  digitalSignature?: { available: boolean; status: string; signer?: string | null }
+  windowTitle?: string | null
+  connectionCount?: number
+  diskReadBytes?: number | null
+  diskWriteBytes?: number | null
+  connections?: Array<{
+    localAddress?: string | null
+    remoteAddress?: string | null
+    status?: string
+  }>
+  status?: string
+  username?: string | null
+  classifications: ProcessClassification[]
+  aiSummary: string
+  memoryTrend?: Array<{ recordedAt: number; memoryBytes: number }>
+}
+
+export interface IntelligenceHistoryResponse {
+  metric: string
+  hours: number
+  points: Array<{ metricKey?: string; value: number; recordedAt: string }>
+  average: number
+  current: number
+  unusual: boolean
+}
+
 export interface CopilotSystemContext {
   cpuPercent?: number
   ramPercent?: number
@@ -420,6 +499,53 @@ export interface CopilotHistoryMessage {
   content: string
 }
 
+/** Desktop automation action types — executed in Electron main process */
+export type DesktopActionType =
+  | 'launch_app'
+  | 'open_folder'
+  | 'open_file'
+  | 'file_search'
+  | 'file_create_folder'
+  | 'file_create_text'
+  | 'file_rename'
+  | 'file_move'
+  | 'file_copy'
+  | 'file_delete'
+  | 'close_process'
+  | 'restart_process'
+  | 'list_processes'
+  | 'clipboard_intelligence'
+  | 'system_shutdown'
+  | 'system_restart'
+
+export interface DesktopActionCandidate {
+  label: string
+  path: string
+  fileName?: string
+  documentId?: number
+}
+
+export interface DesktopActionPlan {
+  id: string
+  type: DesktopActionType
+  params: Record<string, unknown>
+  requiresConfirmation: boolean
+  confirmationMessage?: string
+  candidates?: DesktopActionCandidate[]
+  status: 'pending' | 'awaiting_choice' | 'awaiting_confirmation'
+  logMessage?: string
+}
+
+export interface DesktopActionResult {
+  ok: boolean
+  message: string
+  status?: 'success' | 'failed'
+  verified?: boolean
+  durationMs?: number
+  details?: string
+  data?: Record<string, unknown>
+}
+
 export interface CopilotChatResponse {
   reply: string
   systemContext: CopilotSystemContext
@@ -436,5 +562,8 @@ export interface CopilotChatResponse {
   copilotProvider?: string
   modelUsed?: string
   directAnswer?: boolean
+  desktopAction?: boolean
+  desktopActionPlan?: DesktopActionPlan
+  desktopActionResult?: DesktopActionResult
   profile?: Record<string, number>
 }

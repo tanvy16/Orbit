@@ -4,6 +4,11 @@ import json
 import mimetypes
 from pathlib import Path
 
+from backend.app.core.ai_config import (
+    DEFAULT_COPILOT_MODEL,
+    DEFAULT_EMBEDDING_MODEL,
+    DEFAULT_OLLAMA_BASE_URL,
+)
 from backend.app.core.indexing_config import (
     DEFAULT_IGNORED_DIRECTORY_NAMES,
     DEFAULT_SUPPORTED_EXTENSIONS,
@@ -22,13 +27,13 @@ DEFAULT_SETTINGS: dict = {
         "watcherEvents": False,
     },
     "embeddingProvider": "ollama",
-    "embeddingModel": "nomic-embed-text",
-    "ollamaBaseUrl": "http://127.0.0.1:11434",
+    "embeddingModel": DEFAULT_EMBEDDING_MODEL,
+    "ollamaBaseUrl": DEFAULT_OLLAMA_BASE_URL,
     "chunkSize": 800,
     "chunkOverlap": 120,
     "autoEmbedOnIndex": True,
     "copilotProvider": "ollama",
-    "copilotModel": "gemma3:4b",
+    "copilotModel": DEFAULT_COPILOT_MODEL,
 }
 
 

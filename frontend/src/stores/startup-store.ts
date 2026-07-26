@@ -8,6 +8,6 @@ interface StartupStore {
 }
 
 export const useStartupStore = create<StartupStore>((set) => ({
-  phase: 'splash',
+  phase: 'overlay',
   setPhase: (phase) => set({ phase }),
 }))

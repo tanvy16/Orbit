@@ -2,11 +2,10 @@ import { NavLink } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 
-import { AnimatedLogo } from '@/components/splash/AnimatedLogo'
+import { OrbitLogoMark } from '@/components/brand/OrbitLogoMark'
 import { Button } from '@/components/ui/Button'
 import { primaryNavigation, secondaryNavigation } from '@/config/navigation'
 import { appConfig } from '@/config/app'
-import { useStartupStore } from '@/stores/startup-store'
 import { useUiStore } from '@/stores/ui-store'
 import { cn } from '@/utils/cn'
 
@@ -22,8 +21,6 @@ function NavSection({ title, collapsed }: { title: string; collapsed: boolean })
 export function Sidebar() {
   const collapsed = useUiStore((s) => s.sidebarCollapsed)
   const toggleSidebar = useUiStore((s) => s.toggleSidebar)
-  const startupPhase = useStartupStore((s) => s.phase)
-  const showBrandLogo = startupPhase === 'transition' || startupPhase === 'complete'
 
   return (
     <motion.aside
@@ -38,11 +35,7 @@ export function Sidebar() {
           collapsed ? 'h-16 flex-col items-center justify-center gap-1 py-2' : 'h-[4.25rem] items-center gap-3 px-4',
         )}
       >
-        {showBrandLogo ? (
-          <AnimatedLogo className={cn(collapsed && 'h-8 max-w-[2.5rem]')} />
-        ) : (
-          <div className={cn('shrink-0', collapsed ? 'h-8 w-8' : 'h-10 w-10')} aria-hidden />
-        )}
+        <OrbitLogoMark className={cn('shrink-0', collapsed ? 'h-8 w-8' : 'h-10 w-10')} />
         {!collapsed ? (
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold tracking-tight">{appConfig.name}</p>

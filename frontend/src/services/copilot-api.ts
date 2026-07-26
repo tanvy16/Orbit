@@ -1,4 +1,4 @@
-import type { CopilotChatResponse, CopilotHistoryMessage } from '@shared/types'
+import type { CopilotChatResponse, DesktopActionResult, CopilotHistoryMessage } from '@shared/types'
 
 import { appConfig } from '@/config/app'
 import { ApiError } from '@/services/http'
@@ -21,6 +21,9 @@ type StreamPayload = {
   copilotProvider?: string
   modelUsed?: string
   directAnswer?: boolean
+  desktopAction?: boolean
+  desktopActionPlan?: CopilotChatResponse['desktopActionPlan']
+  desktopActionResult?: DesktopActionResult
   profile?: Record<string, number>
 }
 
@@ -51,6 +54,7 @@ export async function streamCopilotMessage(
   history: CopilotHistoryMessage[],
   handlers: {
     onReady?: () => void
+    onStatus?: (status: string) => void
     onToken: (token: string) => void
     onDone: (response: CopilotChatResponse) => void
     onError: (error: Error) => void
@@ -98,7 +102,10 @@ export async function streamCopilotMessage(
         const payload = parseSseDataLine(line)
         if (!payload) continue
 
-        if (payload.type === 'status') continue
+        if (payload.type === 'status' && payload.content) {
+          handlers.onStatus?.(payload.content)
+          continue
+        }
 
         if (payload.type === 'ready') {
           handlers.onReady?.()
@@ -170,6 +177,9 @@ function buildChatResponse(payload: StreamPayload): CopilotChatResponse {
     copilotProvider: payload.copilotProvider,
     modelUsed: payload.modelUsed,
     directAnswer: payload.directAnswer,
+    desktopAction: payload.desktopAction,
+    desktopActionPlan: payload.desktopActionPlan,
+    desktopActionResult: payload.desktopActionResult,
     profile: payload.profile,
   }
 }

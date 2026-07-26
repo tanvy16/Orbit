@@ -5,10 +5,11 @@ export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs))
 }
 
-export function formatRelativeTime(timestamp: number): string {
+export function formatRelativeTime(timestamp: number | string): string {
+  const value = typeof timestamp === 'string' ? Date.parse(timestamp) : timestamp
   return new Intl.DateTimeFormat(undefined, {
     hour: 'numeric',
     minute: 'numeric',
     second: 'numeric',
-  }).format(new Date(timestamp))
+  }).format(new Date(value))
 }

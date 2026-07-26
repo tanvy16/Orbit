@@ -50,7 +50,7 @@ def monitoring_stub() -> dict:
 
 @router.get("/analytics")
 def analytics_stub() -> dict:
-    return {"implemented": False, "phase": 4, "message": "Historical analytics reserved."}
+    return {"implemented": True, "phase": 5.7, "message": "System Intelligence module active at /api/v1/intelligence/overview"}
 
 
 @router.get("/automation")

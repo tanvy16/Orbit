@@ -16,9 +16,13 @@ export const routes = {
   search: '/search',
   documents: '/documents',
   automation: '/automation',
-  analytics: '/analytics',
+  intelligence: '/intelligence',
+  /** @deprecated use intelligence */
+  analytics: '/intelligence',
   notifications: '/notifications',
   history: '/history',
+  activity: '/activity',
+  diagnostics: '/diagnostics',
   settings: '/settings',
   about: '/about',
 } as const

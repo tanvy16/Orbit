@@ -4,11 +4,14 @@ import { FolderPlus, RefreshCw, Trash2 } from 'lucide-react'
 
 import { DEFAULT_SUPPORTED_EXTENSIONS } from '@shared/types'
 
+import { AIModelsSettings } from '@/components/settings/AIModelsSettings'
 import { OllamaModelPicker } from '@/components/settings/OllamaModelPicker'
+import { SettingsSection, SettingsTabs, type SettingsSection as SettingsTabId } from '@/components/settings/SettingsTabs'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Input } from '@/components/ui/Input'
+import { Switch } from '@/components/ui/Switch'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Select } from '@/components/ui/Select'
 import { rebuildEmbeddings, syncEmbeddings } from '@/services/search-api'
@@ -22,11 +25,13 @@ import {
   updateSettings,
 } from '@/services/documents-api'
 import { SettingsFormSkeleton } from '@/components/ui/Skeleton'
+import { toast } from '@/stores/toast-store'
 
 export function SettingsPage() {
   const queryClient = useQueryClient()
   const [extensionsText, setExtensionsText] = useState('')
   const [ignoredText, setIgnoredText] = useState('')
+  const [activeSection, setActiveSection] = useState<SettingsTabId>('general')
 
   const settingsQuery = useQuery({
     queryKey: ['settings'],
@@ -38,6 +43,7 @@ export function SettingsPage() {
   const saveMutation = useMutation({
     mutationFn: updateSettings,
     onSuccess: () => {
+      toast({ level: 'success', title: 'Settings saved' })
       void queryClient.invalidateQueries({ queryKey: ['settings'] })
       void queryClient.invalidateQueries({ queryKey: ['embedding-status'] })
       void queryClient.invalidateQueries({ queryKey: ['ollama-models'] })
@@ -87,7 +93,9 @@ export function SettingsPage() {
         description="Indexing folders, supported formats, notifications, and database maintenance."
       />
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <SettingsTabs active={activeSection} onChange={setActiveSection} />
+
+      <SettingsSection id="general" active={activeSection}>
         <Card>
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold">Indexed folders</h2>
@@ -139,18 +147,18 @@ export function SettingsPage() {
           <h2 className="text-sm font-semibold">Indexing behaviour</h2>
           <label className="flex items-center justify-between gap-4 text-sm">
             <span>Auto-index on file changes</span>
-            <input
-              type="checkbox"
+            <Switch
               checked={settings.autoIndexOnChange}
-              onChange={(e) => saveMutation.mutate({ autoIndexOnChange: e.target.checked })}
+              onCheckedChange={(checked) => saveMutation.mutate({ autoIndexOnChange: checked })}
+              label="Auto-index on file changes"
             />
           </label>
           <label className="flex items-center justify-between gap-4 text-sm">
             <span>Index on startup</span>
-            <input
-              type="checkbox"
+            <Switch
               checked={settings.autoIndexOnStartup}
-              onChange={(e) => saveMutation.mutate({ autoIndexOnStartup: e.target.checked })}
+              onCheckedChange={(checked) => saveMutation.mutate({ autoIndexOnStartup: checked })}
+              label="Index on startup"
             />
           </label>
           <label className="block text-sm">
@@ -163,7 +171,9 @@ export function SettingsPage() {
             />
           </label>
         </Card>
+      </SettingsSection>
 
+      <SettingsSection id="indexing" active={activeSection}>
         <Card className="space-y-3">
           <h2 className="text-sm font-semibold">Ignored directory names</h2>
           <Input
@@ -191,7 +201,9 @@ export function SettingsPage() {
           />
           <p className="text-xs text-orbit-foreground-muted">Include leading dots, e.g. .pdf, .docx</p>
         </Card>
+      </SettingsSection>
 
+      <SettingsSection id="notifications" active={activeSection}>
         <Card className="space-y-3">
           <h2 className="text-sm font-semibold">Notifications</h2>
           {(
@@ -203,20 +215,23 @@ export function SettingsPage() {
           ).map(([key, label]) => (
             <label key={key} className="flex items-center justify-between gap-4 text-sm">
               <span>{label}</span>
-              <input
-                type="checkbox"
+              <Switch
                 checked={settings.notifications[key]}
-                onChange={(e) =>
+                onCheckedChange={(checked) =>
                   saveMutation.mutate({
-                    notifications: { ...settings.notifications, [key]: e.target.checked },
+                    notifications: { ...settings.notifications, [key]: checked },
                   })
                 }
+                label={label}
               />
             </label>
           ))}
         </Card>
+      </SettingsSection>
 
-        <Card className="space-y-3">
+      <SettingsSection id="ai" active={activeSection}>
+        <AIModelsSettings settings={settings} onSave={(patch) => saveMutation.mutate(patch)} />
+        <Card className="space-y-3 lg:col-span-2">
           <h2 className="text-sm font-semibold">Embeddings & vectors</h2>
           <label className="block text-sm">
             <span className="text-orbit-foreground-muted">Ollama base URL</span>
@@ -262,10 +277,10 @@ export function SettingsPage() {
           )}
           <label className="flex items-center justify-between gap-4 text-sm">
             <span>Auto-generate embeddings on index</span>
-            <input
-              type="checkbox"
+            <Switch
               checked={settings.autoEmbedOnIndex}
-              onChange={(e) => saveMutation.mutate({ autoEmbedOnIndex: e.target.checked })}
+              onCheckedChange={(checked) => saveMutation.mutate({ autoEmbedOnIndex: checked })}
+              label="Auto-generate embeddings on index"
             />
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -297,48 +312,9 @@ export function SettingsPage() {
             </Button>
           </div>
         </Card>
+      </SettingsSection>
 
-        <Card className="space-y-3">
-          <h2 className="text-sm font-semibold">AI Copilot</h2>
-          <label className="block text-sm">
-            <span className="text-orbit-foreground-muted">LLM provider</span>
-            <Select
-              className="mt-1 w-full"
-              value={settings.copilotProvider}
-              onChange={(e) =>
-                saveMutation.mutate({
-                  copilotProvider: e.target.value as 'ollama' | 'openai',
-                })
-              }
-            >
-              <option value="ollama">Ollama (local)</option>
-              <option value="openai">OpenAI</option>
-            </Select>
-          </label>
-          {settings.copilotProvider === 'ollama' ? (
-            <OllamaModelPicker
-              label="Copilot model"
-              value={settings.copilotModel}
-              baseUrl={settings.ollamaBaseUrl}
-              onChange={(copilotModel) => saveMutation.mutate({ copilotModel })}
-            />
-          ) : (
-            <label className="block text-sm">
-              <span className="text-orbit-foreground-muted">Copilot model</span>
-              <Input
-                className="mt-1"
-                defaultValue={settings.copilotModel}
-                placeholder="gpt-4o-mini"
-                onBlur={(e) => saveMutation.mutate({ copilotModel: e.target.value })}
-              />
-            </label>
-          )}
-          <p className="text-xs text-orbit-foreground-muted">
-            OpenAI requires <code className="rounded bg-orbit-muted px-1">OPENAI_API_KEY</code> in the
-            backend environment. Ollama models are loaded from the base URL above.
-          </p>
-        </Card>
-
+      <SettingsSection id="maintenance" active={activeSection}>
         <Card className="space-y-3">
           <h2 className="text-sm font-semibold">Database maintenance</h2>
           <p className="text-sm text-orbit-foreground-muted">
@@ -358,7 +334,7 @@ export function SettingsPage() {
             </p>
           ) : null}
         </Card>
-      </div>
+      </SettingsSection>
     </>
   )
 }

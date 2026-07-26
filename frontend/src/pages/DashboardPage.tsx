@@ -1,6 +1,11 @@
 import { Activity, Cpu, FileStack, Layers, Search, Server } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
 
+import { SystemStatusWidget } from '@/components/startup/SystemStatusWidget'
+import { QuickActionsWidget } from '@/components/dashboard/QuickActionsWidget'
+import { RecentActivityWidget } from '@/components/dashboard/RecentActivityWidget'
+import { ResourceWidgets } from '@/components/dashboard/ResourceWidgets'
 import { Card } from '@/components/ui/Card'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { MetricCard } from '@/components/ui/MetricCard'
@@ -10,6 +15,8 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { healthLevelFromApiStatus } from '@/utils/health-status'
 import { useApiHealth, useElectronPing } from '@/hooks/use-system-status'
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion'
+import { useStartupStore } from '@/stores/startup-store'
 import { appConfig } from '@/config/app'
 import { fetchDocumentStats } from '@/services/documents-api'
 import { fetchEmbeddingStatus, fetchSearchStats } from '@/services/search-api'
@@ -18,6 +25,9 @@ import { formatRelativeTime } from '@/utils/cn'
 export function DashboardPage() {
   const health = useApiHealth()
   const ipc = useElectronPing()
+  const reduceMotion = usePrefersReducedMotion()
+  const startupPhase = useStartupStore((s) => s.phase)
+  const animateCards = !reduceMotion && startupPhase === 'overlay'
   const docStats = useQuery({
     queryKey: ['document-stats'],
     queryFn: fetchDocumentStats,
@@ -61,7 +71,21 @@ export function DashboardPage() {
         description="Live view of indexing, embeddings, vector search, and system health."
       />
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <motion.div
+        className="mb-8"
+        initial={animateCards ? { opacity: 0, y: 10 } : false}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, delay: 0.08, ease: [0.4, 0, 0.2, 1] }}
+      >
+        <SystemStatusWidget />
+      </motion.div>
+
+      <motion.div
+        className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        initial={animateCards ? { opacity: 0, y: 12 } : false}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.48, delay: 0.14, ease: [0.4, 0, 0.2, 1] }}
+      >
         {docStats.isLoading && !docStats.data ? (
           <>
             <MetricCardSkeleton />
@@ -95,6 +119,15 @@ export function DashboardPage() {
             />
           </>
         )}
+      </motion.div>
+
+      <div className="mb-8">
+        <ResourceWidgets />
+      </div>
+
+      <div className="mb-8 grid gap-4 lg:grid-cols-2">
+        <QuickActionsWidget />
+        <RecentActivityWidget />
       </div>
 
       <Card className="mb-8">

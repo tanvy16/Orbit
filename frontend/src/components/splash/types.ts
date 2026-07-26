@@ -1,1 +1,1 @@
-export type StartupPhase = 'splash' | 'transition' | 'complete'
+export type StartupPhase = 'overlay' | 'complete'

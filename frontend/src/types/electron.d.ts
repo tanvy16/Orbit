@@ -9,6 +9,8 @@ import type {
   PaginatedDocumentsResponse,
   PingResponse,
   WatchedFolderDto,
+  DesktopActionPlan,
+  DesktopActionResult,
   FsDirectoryEntry,
   FsEntryMetadata,
 } from '@shared/types'
@@ -26,6 +28,7 @@ export interface OrbitElectronAPI {
   cancelIndexTask: (taskId: string) => Promise<{ cancelled: boolean }>
   getActiveIndexTasks: () => Promise<IndexTaskSummary[]>
   resyncWatcher: () => Promise<{ ok: boolean }>
+  executeDesktopAction: (plan: DesktopActionPlan) => Promise<DesktopActionResult>
   onIndexProgress: (listener: (event: IndexProgressEvent) => void) => () => void
   onIndexComplete: (listener: (event: IndexProgressEvent) => void) => () => void
   onWatcherChange: (listener: (event: { path: string; type: string }) => void) => () => void

@@ -6,10 +6,32 @@ from backend.monitoring.aggregator import collect_light_snapshot, collect_snapsh
 
 _FULL_CACHE: dict = {"at_ms": 0.0, "snapshot": None}
 _LIGHT_CACHE: dict = {"at_ms": 0.0, "snapshot": None}
+_METRICS_LAST_WRITE_MS = 0.0
 
 FULL_TTL_MS = 5000
 LIGHT_TTL_MS = 5000
 PROCESS_TTL_MS = 5000
+METRICS_WRITE_INTERVAL_MS = 30_000
+
+
+def _maybe_persist_metrics(snapshot: dict) -> None:
+    global _METRICS_LAST_WRITE_MS
+    now = time.time() * 1000
+    if now - _METRICS_LAST_WRITE_MS < METRICS_WRITE_INTERVAL_MS:
+        return
+    _METRICS_LAST_WRITE_MS = now
+    try:
+        from backend.app.database.session import SessionLocal
+        from backend.observability.metrics_service import HistoricalMetricsService
+
+        db = SessionLocal()
+        try:
+            HistoricalMetricsService(db).record_snapshot(snapshot)
+            HistoricalMetricsService(db).prune_older_than_hours(48)
+        finally:
+            db.close()
+    except Exception:
+        pass
 
 
 def get_cached_snapshot(*, force: bool = False, include_processes: bool = True) -> dict:
@@ -31,6 +53,13 @@ def get_cached_snapshot(*, force: bool = False, include_processes: bool = True) 
         _FULL_CACHE["snapshot"] = snapshot
         _LIGHT_CACHE["at_ms"] = now
         _LIGHT_CACHE["snapshot"] = _light_from_full(snapshot)
+        try:
+            from backend.intelligence.timeline import observe_snapshot
+
+            observe_snapshot(snapshot)
+        except Exception:
+            pass
+        _maybe_persist_metrics(snapshot)
         return snapshot
 
     cached_light = _LIGHT_CACHE.get("snapshot")

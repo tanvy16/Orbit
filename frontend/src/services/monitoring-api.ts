@@ -2,7 +2,7 @@ import type { SystemMetricsSnapshot } from '@shared/types'
 
 import { apiFetch } from '@/services/http'
 
-export function fetchMonitoringSnapshot(includeProcesses = false) {
+export function fetchMonitoringSnapshot(includeProcesses = true) {
   const query = includeProcesses ? '?includeProcesses=true' : ''
   return apiFetch<SystemMetricsSnapshot>(`/api/v1/monitoring/snapshot${query}`, {
     timeoutMs: 8_000,

@@ -31,10 +31,16 @@ def snapshot() -> dict:
         per_core = []
 
     freq_mhz: float | None = None
+    base_freq_mhz: float | None = None
+    max_freq_mhz: float | None = None
     try:
         freq = psutil.cpu_freq()
         if freq and freq.current:
             freq_mhz = round(float(freq.current), 1)
+        if freq and freq.min:
+            base_freq_mhz = round(float(freq.min), 1)
+        if freq and freq.max:
+            max_freq_mhz = round(float(freq.max), 1)
     except Exception:
         freq_mhz = None
 
@@ -42,6 +48,8 @@ def snapshot() -> dict:
         "usagePercent": round(overall, 2),
         "perCorePercent": per_core,
         "frequencyMhz": freq_mhz,
+        "baseFrequencyMhz": base_freq_mhz,
+        "maxFrequencyMhz": max_freq_mhz,
         "coreCount": psutil.cpu_count(logical=True) or 0,
         "loadHistory": list(_usage_history),
     }

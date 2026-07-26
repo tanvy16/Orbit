@@ -1,13 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { CopilotMessageItem } from '@/components/copilot/CopilotMessageList'
+import {
+  chooseActionFile,
+  executeActionPlan,
+  formatExecutionMessage,
+} from '@/services/actions-api'
 import { sendCopilotMessage, streamCopilotMessage } from '@/services/copilot-api'
 import { ApiError } from '@/services/http'
-import type { CopilotHistoryMessage } from '@shared/types'
+import type { CopilotHistoryMessage, DesktopActionCandidate, DesktopActionPlan } from '@shared/types'
 
 const MAX_HISTORY = 8
-/** Batch streamed tokens to reduce markdown re-parses (~30fps). */
-const STREAM_FLUSH_MS = 32
+const STREAM_FLUSH_MS = 16
+
+const STATUS_LABELS: Record<string, string> = {
+  preparing: 'Analyzing your request…',
+  intent: 'Understanding intent…',
+  context: 'Gathering context…',
+  telemetry: 'Reading system telemetry…',
+  rag: 'Searching documents…',
+  generating: 'Generating response…',
+}
 
 function toHistory(items: CopilotMessageItem[]): CopilotHistoryMessage[] {
   return items
@@ -34,6 +47,8 @@ export function useCopilotChat() {
   const [messages, setMessages] = useState<CopilotMessageItem[]>([])
   const [isBusy, setIsBusy] = useState(false)
   const [isPreparing, setIsPreparing] = useState(false)
+  const [preparingLabel, setPreparingLabel] = useState('Analyzing your request…')
+  const [actionBusyId, setActionBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const abortRef = useRef<AbortController | null>(null)
@@ -56,6 +71,14 @@ export function useCopilotChat() {
     )
   }, [])
 
+  const appendAssistantContent = useCallback((assistantId: string, suffix: string) => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === assistantId ? { ...m, content: `${m.content.trim()}\n\n${suffix}`.trim() } : m,
+      ),
+    )
+  }, [])
+
   const scheduleTokenFlush = useCallback(
     (assistantId: string) => {
       if (flushTimerRef.current != null) return
@@ -65,6 +88,23 @@ export function useCopilotChat() {
       }, STREAM_FLUSH_MS)
     },
     [flushPendingTokens],
+  )
+
+  const runConfirmedAction = useCallback(
+    async (assistantId: string, plan: DesktopActionPlan, userCommand: string, force = false) => {
+      setActionBusyId(assistantId)
+      try {
+        const response = force
+          ? await executeActionPlan(plan, { userCommand, force: true })
+          : await executeActionPlan(plan, { userCommand })
+        appendAssistantContent(assistantId, formatExecutionMessage(response.result))
+      } catch (actionError) {
+        appendAssistantContent(assistantId, `✗ ${parseApiErrorMessage(actionError, 'Desktop action failed')}`)
+      } finally {
+        setActionBusyId(null)
+      }
+    },
+    [appendAssistantContent],
   )
 
   useEffect(() => {
@@ -82,6 +122,7 @@ export function useCopilotChat() {
       setError(null)
       setIsBusy(true)
       setIsPreparing(true)
+      setPreparingLabel('Analyzing your request…')
 
       const assistantId = `assistant-${Date.now()}`
       let historySnapshot: CopilotMessageItem[] = []
@@ -116,6 +157,9 @@ export function useCopilotChat() {
         history,
         {
           onReady: () => setIsPreparing(false),
+          onStatus: (status) => {
+            setPreparingLabel(STATUS_LABELS[status] ?? 'Preparing…')
+          },
           onToken: (token) => {
             streamed = true
             setIsPreparing(false)
@@ -125,23 +169,27 @@ export function useCopilotChat() {
           onDone: (data) => {
             flushPendingTokens(assistantId)
             setIsPreparing(false)
-            finalizeAssistant({ content: data.reply, meta: data })
+            setMessages((prev) =>
+              prev.map((m) => {
+                if (m.id !== assistantId) return m
+                const streamedContent = (m.content + pendingTokensRef.current).trim()
+                const finalContent = streamedContent || data.reply?.trim() || ''
+                return { ...m, content: finalContent, meta: data, streaming: false }
+              }),
+            )
+            pendingTokensRef.current = ''
           },
           onError: async (err) => {
             flushPendingTokens(assistantId)
             setIsPreparing(false)
 
             if (err.message === 'Request cancelled') {
-              flushPendingTokens(assistantId)
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId
                     ? {
                         ...m,
-                        content:
-                          m.content ||
-                          pendingTokensRef.current ||
-                          'Response cancelled.',
+                        content: m.content || pendingTokensRef.current || 'Response cancelled.',
                         streaming: false,
                       }
                     : m,
@@ -181,6 +229,47 @@ export function useCopilotChat() {
     [clearFlushTimer, flushPendingTokens, isBusy, scheduleTokenFlush],
   )
 
+  const confirmDesktopAction = useCallback(
+    async (assistantId: string) => {
+      const message = messages.find((item) => item.id === assistantId)
+      const plan = message?.meta?.desktopActionPlan
+      if (!plan) return
+      const userMessage = [...messages]
+        .slice(0, messages.findIndex((item) => item.id === assistantId))
+        .reverse()
+        .find((item) => item.role === 'user')
+      await runConfirmedAction(assistantId, plan, userMessage?.content ?? '', true)
+    },
+    [messages, runConfirmedAction],
+  )
+
+  const chooseDesktopFile = useCallback(
+    async (assistantId: string, candidate: DesktopActionCandidate) => {
+      const message = messages.find((item) => item.id === assistantId)
+      const plan = message?.meta?.desktopActionPlan
+      if (!plan) return
+      const userMessage = [...messages]
+        .slice(0, messages.findIndex((item) => item.id === assistantId))
+        .reverse()
+        .find((item) => item.role === 'user')
+      setActionBusyId(assistantId)
+      try {
+        const response = await chooseActionFile(
+          plan,
+          candidate.path,
+          candidate.fileName ?? candidate.label,
+          userMessage?.content ?? '',
+        )
+        appendAssistantContent(assistantId, formatExecutionMessage(response.result))
+      } catch (actionError) {
+        appendAssistantContent(assistantId, `✗ ${parseApiErrorMessage(actionError, 'Failed to open file')}`)
+      } finally {
+        setActionBusyId(null)
+      }
+    },
+    [appendAssistantContent, messages],
+  )
+
   const cancel = useCallback(() => {
     abortRef.current?.abort()
   }, [])
@@ -192,14 +281,44 @@ export function useCopilotChat() {
     await sendMessage(lastUser.content)
   }, [isBusy, messages, sendMessage])
 
+  const regenerateLast = useCallback(async () => {
+    const lastUser = [...messages].reverse().find((m) => m.role === 'user')
+    if (!lastUser || isBusy) return
+    setMessages((prev) => {
+      const lastAssistantIndex = [...prev]
+        .map((message, index) => ({ message, index }))
+        .reverse()
+        .find((entry) => entry.message.role === 'assistant')?.index
+      if (lastAssistantIndex == null) return prev
+      return prev.slice(0, lastAssistantIndex)
+    })
+    setError(null)
+    await sendMessage(lastUser.content)
+  }, [isBusy, messages, sendMessage])
+
+  const copyMessage = useCallback(async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content)
+      return true
+    } catch {
+      return false
+    }
+  }, [])
+
   return {
     messages,
     isBusy,
     isPreparing,
+    preparingLabel,
+    actionBusyId,
     error,
     sendMessage,
     cancel,
     retryLast,
+    regenerateLast,
+    copyMessage,
+    confirmDesktopAction,
+    chooseDesktopFile,
     setError,
   }
 }

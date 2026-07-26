@@ -1,8 +1,9 @@
 import { dialog, ipcMain, shell } from 'electron'
 
-import { IPC_CHANNELS, type AppInfo, type PingResponse } from '@shared/types'
+import { IPC_CHANNELS, type AppInfo, type DesktopActionPlan, type PingResponse } from '@shared/types'
 
 import { apiRequest } from '../services/api-client'
+import { executeDesktopAction } from '../services/desktop-actions'
 import { fileWatcherService } from '../services/watcher'
 import { getEntryMetadata, listDirectory, readTextPreview } from '../services/fs-service'
 import { pathGuard } from '../services/path-guard'
@@ -75,6 +76,14 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.AI_INVOKE, async () => {
     throw new Error('AI Copilot is reserved for Phase 4')
+  })
+
+  ipcMain.handle(IPC_CHANNELS.DESKTOP_ACTION_EXECUTE, async (_event, plan: DesktopActionPlan) => {
+    return executeDesktopAction(plan)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.AUTOMATION_RUN, async (_event, plan: DesktopActionPlan) => {
+    return executeDesktopAction(plan)
   })
 }
 

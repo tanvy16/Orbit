@@ -1,6 +1,5 @@
 export {
   AboutPage,
-  AnalyticsPage,
   AutomationPage,
   CopilotPage,
   DashboardPage,
@@ -8,6 +7,7 @@ export {
   HistoryPage,
   NotificationsPage,
   SettingsPage,
+  SystemIntelligencePage,
 } from '@/pages/routes'
 
 export { SearchPage } from '@/pages/SearchPage'

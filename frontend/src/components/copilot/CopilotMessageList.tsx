@@ -1,11 +1,12 @@
-import { Bot } from 'lucide-react'
+import { Bot, Copy, RotateCcw } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useEffect, useRef } from 'react'
 
 import { CopilotMarkdown } from '@/components/copilot/CopilotMarkdown'
 import { CopilotTypingIndicator } from '@/components/copilot/CopilotTypingIndicator'
+import { DesktopActionPanel } from '@/components/copilot/DesktopActionPanel'
 import { DocumentCitations } from '@/components/copilot/DocumentCitations'
-import type { CopilotChatResponse } from '@shared/types'
+import type { CopilotChatResponse, DesktopActionCandidate } from '@shared/types'
 import { cn } from '@/utils/cn'
 
 export interface CopilotMessageItem {
@@ -21,6 +22,12 @@ interface CopilotMessageListProps {
   isPreparing: boolean
   preparingLabel?: string
   streamingLabel?: string
+  actionBusyId?: string | null
+  onDesktopActionConfirm?: (messageId: string) => void
+  onDesktopActionChoose?: (messageId: string, candidate: DesktopActionCandidate) => void
+  onCopy?: (content: string) => void | Promise<boolean>
+  onRegenerate?: () => void
+  canRegenerate?: boolean
 }
 
 const NEAR_BOTTOM_PX = 120
@@ -30,6 +37,12 @@ export function CopilotMessageList({
   isPreparing,
   preparingLabel = 'Analyzing your request…',
   streamingLabel = 'Generating response…',
+  actionBusyId,
+  onDesktopActionConfirm,
+  onDesktopActionChoose,
+  onCopy,
+  onRegenerate,
+  canRegenerate,
 }: CopilotMessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -119,11 +132,43 @@ export function CopilotMessageList({
                       ) : null}
                       {!msg.streaming && msg.meta?.directAnswer ? (
                         <p className="mt-3 text-[11px] text-orbit-foreground-muted">
-                          Answered instantly from Orbit telemetry &amp; index data
+                          {msg.meta.desktopAction
+                            ? 'Desktop action routed through Orbit automation'
+                            : 'Answered instantly from Orbit telemetry & index data'}
                         </p>
+                      ) : null}
+                      {!msg.streaming && msg.meta?.desktopActionPlan ? (
+                        <DesktopActionPanel
+                          plan={msg.meta.desktopActionPlan}
+                          busy={actionBusyId === msg.id}
+                          onConfirm={() => onDesktopActionConfirm?.(msg.id)}
+                          onChoose={(candidate) => onDesktopActionChoose?.(msg.id, candidate)}
+                        />
                       ) : null}
                       {!msg.streaming && msg.meta?.documentSources?.length ? (
                         <DocumentCitations sources={msg.meta.documentSources} />
+                      ) : null}
+                      {!msg.streaming && msg.content ? (
+                        <div className="mt-3 flex items-center gap-1 border-t border-orbit-border/50 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => void onCopy?.(msg.content)}
+                            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-orbit-foreground-muted transition-colors hover:bg-orbit-muted/60 hover:text-orbit-foreground"
+                          >
+                            <Copy className="h-3 w-3" />
+                            Copy
+                          </button>
+                          {canRegenerate && msg.id === messages[messages.length - 1]?.id ? (
+                            <button
+                              type="button"
+                              onClick={() => onRegenerate?.()}
+                              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-orbit-foreground-muted transition-colors hover:bg-orbit-muted/60 hover:text-orbit-foreground"
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              Regenerate
+                            </button>
+                          ) : null}
+                        </div>
                       ) : null}
                     </>
                   ) : (

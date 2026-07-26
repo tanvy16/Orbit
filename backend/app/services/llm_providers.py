@@ -9,16 +9,17 @@ from typing import Any
 
 import httpx
 
+from backend.app.core.ai_config import (
+    DEFAULT_COPILOT_MODEL,
+    DEFAULT_OPENAI_MODEL,
+    LLM_TIMEOUT_SECONDS,
+    MAX_HISTORY_MESSAGES,
+    OLLAMA_KEEP_ALIVE,
+    OLLAMA_NUM_CTX,
+    OLLAMA_NUM_PREDICT,
+)
 from backend.app.core.config import settings
 from backend.app.core.logging import logger
-
-DEFAULT_COPILOT_MODEL = "gemma3:4b"
-DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
-LLM_TIMEOUT_SECONDS = 120.0
-MAX_HISTORY_MESSAGES = 8
-OLLAMA_KEEP_ALIVE = "10m"
-OLLAMA_NUM_PREDICT = 512
-OLLAMA_NUM_CTX = 4096
 
 _HTTP_CLIENTS: dict[str, httpx.Client] = {}
 

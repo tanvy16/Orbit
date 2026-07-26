@@ -110,4 +110,7 @@ class CopilotChatResponse(BaseModel):
     copilotProvider: str | None = None
     modelUsed: str | None = None
     directAnswer: bool = False
+    desktopAction: bool = False
+    desktopActionPlan: dict[str, Any] | None = None
+    desktopActionResult: dict[str, Any] | None = None
     profile: dict[str, Any] | None = None

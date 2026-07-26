@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import { LayoutGroup, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
 
-import { SplashScreen } from '@/components/splash/SplashScreen'
+import { StartupLogoOverlay } from '@/components/startup/StartupLogoOverlay'
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion'
 import { useStartupSequence } from '@/hooks/use-startup-sequence'
 import { useStartupStore } from '@/stores/startup-store'
@@ -13,33 +13,25 @@ interface StartupTransitionProps {
 export function StartupTransition({ children }: StartupTransitionProps) {
   const reduceMotion = usePrefersReducedMotion()
   const phase = useStartupStore((s) => s.phase)
-  const { statusMessage } = useStartupSequence({ skipAnimations: reduceMotion })
+  useStartupSequence({ skipAnimations: reduceMotion })
 
-  const showSplash = !reduceMotion && phase !== 'complete'
-  const shellVisible = phase === 'transition' || phase === 'complete'
+  const showOverlay = !reduceMotion && phase === 'overlay'
+  const animateShell = !reduceMotion && phase === 'overlay'
 
   return (
-    <LayoutGroup id="orbit-startup">
-      <div className="relative h-full w-full overflow-hidden">
-        <motion.div
-          className="h-full w-full"
-          initial={false}
-          animate={{
-            opacity: shellVisible ? 1 : 0,
-          }}
-          transition={{ duration: reduceMotion ? 0 : 0.45, delay: reduceMotion ? 0 : 0.12 }}
-          style={{ pointerEvents: phase === 'complete' ? 'auto' : 'none' }}
-        >
-          {children}
-        </motion.div>
+    <div className="relative h-full w-full overflow-hidden">
+      <motion.div
+        className="h-full w-full"
+        initial={false}
+        animate={{
+          opacity: animateShell ? [0.88, 1] : 1,
+        }}
+        transition={{ duration: reduceMotion ? 0 : 0.55, ease: [0.4, 0, 0.2, 1] }}
+      >
+        {children}
+      </motion.div>
 
-        {showSplash ? (
-          <SplashScreen
-            statusMessage={statusMessage}
-            phase={phase === 'transition' ? 'transition' : 'splash'}
-          />
-        ) : null}
-      </div>
-    </LayoutGroup>
+      {showOverlay ? <StartupLogoOverlay /> : null}
+    </div>
   )
 }

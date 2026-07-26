@@ -1,12 +1,14 @@
 import { app, BrowserWindow, shell } from 'electron'
 import { bootstrapDesktopServices, registerIpcHandlers } from './ipc/handlers'
 import { setEventTarget } from './services/events'
+import { startDesktopBridgeServer } from './services/desktop-bridge-server'
 import { createMainWindow } from './window'
 
 let mainWindow: BrowserWindow | null = null
 
 app.whenReady().then(async () => {
   registerIpcHandlers()
+  startDesktopBridgeServer()
   mainWindow = createMainWindow()
   setEventTarget(mainWindow)
 

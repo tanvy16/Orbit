@@ -82,6 +82,8 @@ from backend.app.database.session import SessionLocal
 
 from backend.app.services.document_service import DocumentService
 
+from backend.app.core.ai_config import MAX_HISTORY_MESSAGES as AI_MAX_HISTORY_MESSAGES
+
 from backend.app.services.llm_providers import DEFAULT_COPILOT_MODEL, get_llm_provider
 
 from backend.app.services.search_service import EmbeddingStatsService, SearchService
@@ -90,9 +92,11 @@ from backend.app.services.settings_service import SettingsService
 
 from backend.monitoring.cache import get_cached_snapshot
 
+from backend.observability.copilot_logging import record_copilot_outcome
 
 
-MAX_HISTORY_MESSAGES = 8
+
+MAX_HISTORY_MESSAGES = AI_MAX_HISTORY_MESSAGES
 
 RAG_TOP_K = 3
 
@@ -592,9 +596,22 @@ class CopilotService:
 
 
 
+    def try_casual_response(self, message: str) -> dict | None:
+        from backend.ai.casual import try_casual_response as resolve_casual
+
+        return resolve_casual(message)
+
     def try_direct_response(self, message: str) -> dict | None:
 
         return resolve_direct_response(self.db, message)
+
+
+
+    def try_action_response(self, message: str) -> dict | None:
+
+        from backend.actions.action_executor import try_action_response as resolve_action_response
+
+        return resolve_action_response(self.db, message)
 
 
 
@@ -623,6 +640,10 @@ class CopilotService:
         intents = classify_intents(trimmed)
 
         if intents.get("direct_answer"):
+
+            if intents.get("desktop_action"):
+
+                raise ValueError("Desktop actions must use try_action_response()")
 
             raise ValueError("Direct answers must use try_direct_response()")
 
@@ -910,6 +931,8 @@ class CopilotService:
 
             "directAnswer": False,
 
+            "userMessage": trimmed,
+
         }
 
 
@@ -950,7 +973,35 @@ class CopilotService:
 
             request_timer.finish(extra="mode=direct")
 
+            record_copilot_outcome(self.db, message=message, response=direct, route="direct")
+
             return direct
+
+
+
+        action = self.try_action_response(message)
+
+        if action:
+
+            request_timer.mark("desktopAction")
+
+            request_timer.finish(extra="mode=desktop_action")
+
+            record_copilot_outcome(self.db, message=message, response=action, route="desktop_action")
+
+            return action
+
+        casual = self.try_casual_response(message)
+
+        if casual:
+
+            request_timer.mark("casualFastPath")
+
+            request_timer.finish(extra="mode=casual")
+
+            record_copilot_outcome(self.db, message=message, response=casual, route="casual")
+
+            return casual
 
 
 
@@ -972,13 +1023,17 @@ class CopilotService:
 
         request_timer.finish(extra=f"model={prepared['meta'].get('modelUsed')}")
 
-        return {
+        result = {
 
             "reply": reply,
 
             **prepared["meta"],
 
         }
+
+        record_copilot_outcome(self.db, message=message, response=result, route="chat")
+
+        return result
 
 
 
@@ -1014,7 +1069,7 @@ class CopilotService:
 
         llm_timer.finish(extra=f"tokens={len(tokens)}")
 
-        yield {
+        done_payload = {
 
             "type": "done",
 
@@ -1023,6 +1078,20 @@ class CopilotService:
             **prepared["meta"],
 
         }
+
+        record_copilot_outcome(
+
+            self.db,
+
+            message=prepared["meta"].get("userMessage") or prepared["user_prompt"][:120],
+
+            response=done_payload,
+
+            route="chat_stream",
+
+        )
+
+        yield done_payload
 
 
 

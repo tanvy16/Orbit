@@ -1,13 +1,13 @@
-import orbitLogo from '@/assets/orbit-logo.png'
+import { OrbitLogoMark } from '@/components/brand/OrbitLogoMark'
 
 import { cn } from '@/utils/cn'
 
 const sizeClasses = {
-  xs: 'h-8 w-auto max-w-[2.5rem]',
-  sm: 'h-10 w-auto max-w-[3rem]',
-  md: 'h-14 w-auto max-w-[4rem]',
-  lg: 'h-24 w-auto max-w-[12rem]',
-  hero: 'h-40 w-auto max-w-[20rem] sm:h-48',
+  xs: 'h-8 w-8',
+  sm: 'h-10 w-10',
+  md: 'h-14 w-14',
+  lg: 'h-24 w-24',
+  hero: 'h-40 w-40 sm:h-48 sm:w-48',
 } as const
 
 interface OrbitLogoProps {
@@ -16,14 +16,12 @@ interface OrbitLogoProps {
   alt?: string
 }
 
-/** Official Orbit branding asset — preserve aspect ratio, no crop or distortion. */
+/** Official Orbit branding — SVG vector mark, preserves aspect ratio. */
 export function OrbitLogo({ size = 'md', className, alt = 'Orbit' }: OrbitLogoProps) {
   return (
-    <img
-      src={orbitLogo}
-      alt={alt}
-      draggable={false}
+    <OrbitLogoMark
       className={cn('object-contain select-none', sizeClasses[size], className)}
+      aria-label={alt}
     />
   )
 }

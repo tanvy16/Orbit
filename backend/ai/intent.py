@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 
 from backend.ai.direct import classify_hybrid_route
-from backend.ai.query_patterns import is_document_search_query, needs_generation, needs_reasoning
+from backend.ai.query_patterns import is_document_search_query, is_desktop_action_query, needs_generation, needs_reasoning
 
 # Document-oriented vocabulary (substring match on lowercased message).
 _DOCUMENT_KEYWORDS: frozenset[str] = frozenset(
@@ -255,6 +255,26 @@ def classify_intents(message: str) -> dict[str, bool | str | None]:
             "processes": query_type in {"processes", "process_count"},
             "indexing": query_type in {"indexed_documents", "embeddings", "vector_chunks", "chroma_status"},
             "recommendations": False,
+            "desktop_action": False,
+        }
+
+    if is_desktop_action_query(text):
+        return {
+            "direct_answer": True,
+            "direct_query": "desktop_action",
+            "needs_llm": False,
+            "casual": False,
+            "general": False,
+            "rag": False,
+            "duplicates": False,
+            "duplicates_semantic": False,
+            "storage_health": False,
+            "health_report": False,
+            "telemetry": False,
+            "processes": False,
+            "indexing": False,
+            "recommendations": False,
+            "desktop_action": True,
         }
 
     casual = _is_casual(text)
@@ -332,4 +352,5 @@ def classify_intents(message: str) -> dict[str, bool | str | None]:
         "processes": processes,
         "indexing": indexing,
         "recommendations": recommendations,
+        "desktop_action": False,
     }

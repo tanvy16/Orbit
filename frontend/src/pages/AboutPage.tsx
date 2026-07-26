@@ -33,8 +33,8 @@ const features = [
   },
   {
     icon: Sparkles,
-    title: 'Analytics',
-    description: 'Historical metrics and intelligence reports across your workspace.',
+    title: 'System Intelligence',
+    description: 'AI-powered analysis of CPU, memory, network, and storage with actionable recommendations.',
   },
   {
     icon: Lock,

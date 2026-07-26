@@ -8,6 +8,9 @@ from sqlalchemy import inspect, text
 from backend.app.core.logging import logger
 from backend.app.database.session import engine
 from backend.app.models.base import Base
+from backend.history.database import ensure_history_tables
+from backend.automation.database import ensure_automation_tables
+from backend.observability.database import ensure_observability_tables
 
 
 def _column_names(table: str) -> set[str]:
@@ -30,6 +33,9 @@ def run_migrations() -> None:
     existing = set(inspector.get_table_names())
 
     Base.metadata.create_all(bind=engine)
+    ensure_history_tables()
+    ensure_automation_tables()
+    ensure_observability_tables()
 
     if "indexed_files" in existing or "indexed_files" in inspector.get_table_names():
         migrations = [

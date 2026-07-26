@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
-import { IPC_CHANNELS, IPC_EVENTS, type AppInfo, type IndexProgressEvent, type PingResponse } from '@shared/types'
+import { IPC_CHANNELS, IPC_EVENTS, type AppInfo, type DesktopActionPlan, type DesktopActionResult, type IndexProgressEvent, type PingResponse } from '@shared/types'
 
 export interface OrbitElectronAPI {
   ping: () => Promise<PingResponse>
@@ -15,6 +15,7 @@ export interface OrbitElectronAPI {
   cancelIndexTask: (taskId: string) => Promise<{ cancelled: boolean }>
   getActiveIndexTasks: () => Promise<import('@shared/types').IndexTaskSummary[]>
   resyncWatcher: () => Promise<{ ok: boolean }>
+  executeDesktopAction: (plan: DesktopActionPlan) => Promise<DesktopActionResult>
   onIndexProgress: (listener: (event: IndexProgressEvent) => void) => () => void
   onIndexComplete: (listener: (event: IndexProgressEvent) => void) => () => void
   onWatcherChange: (listener: (event: { path: string; type: string }) => void) => () => void
@@ -40,6 +41,7 @@ const orbitApi: OrbitElectronAPI = {
   cancelIndexTask: (taskId) => ipcRenderer.invoke(IPC_CHANNELS.INDEX_CANCEL_TASK, taskId),
   getActiveIndexTasks: () => ipcRenderer.invoke(IPC_CHANNELS.INDEX_GET_ACTIVE_TASKS),
   resyncWatcher: () => ipcRenderer.invoke(IPC_CHANNELS.WATCHER_RESYNC),
+  executeDesktopAction: (plan) => ipcRenderer.invoke(IPC_CHANNELS.DESKTOP_ACTION_EXECUTE, plan),
   onIndexProgress: (listener) => subscribe(IPC_EVENTS.INDEX_PROGRESS, listener),
   onIndexComplete: (listener) => subscribe(IPC_EVENTS.INDEX_COMPLETE, listener),
   onWatcherChange: (listener) => subscribe(IPC_EVENTS.WATCHER_CHANGE, listener),

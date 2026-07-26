@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     orbit_api_host: str = "127.0.0.1"
     orbit_api_port: int = 18765
+    orbit_desktop_bridge_url: str = "http://127.0.0.1:18766"
     orbit_database_url: str = f"sqlite:///{_DEFAULT_DB.as_posix()}"
     orbit_log_level: str = "info"
     app_name: str = "Orbit API"
